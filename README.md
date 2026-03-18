@@ -17,7 +17,7 @@ tar -xzf
 - You will see Hello World! on your terminal. 
 
 # How to contribute
-Follow this project board to know the latest status of the project: [http://...]([http://...])  
+Follow this project board to know the latest status of the project: [[http://...]([http://...])  ](https://project-juan.atlassian.net/jira/core/projects/GEN/board?filter=&groupBy=status&atlOrigin=eyJpIjoiMWQ3MjcwNDliNzA1NDUwOTgyZmJlZDI4Mzg0ZGRjNWEiLCJwIjoiaiJ9)
 
 ### How to build
 - Use this github repository: ... 
