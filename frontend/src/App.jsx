@@ -1,11 +1,12 @@
-import { useState } from 'react'
 import './App.css'
 import MainMenu from './components/MainMenu'
 
 export default function App() {
-  const [screen] = useState('menu')
-
-  if (screen === 'menu') return <MainMenu />
+  return (
+    <div className="min-h-screen bg-radial from-green-500 to-green-700">
+      <MainMenu />
+    </div>
+  )
 }
 
 
