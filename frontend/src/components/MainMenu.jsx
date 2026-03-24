@@ -1,18 +1,23 @@
+import { useNavigate } from 'react-router-dom';
 import setting_gear from '../assets/setting_gear.png'
 import placeholder_pfp from '../assets/placeholder_pfp.png'
 
 export default function MainMenu() {
+    const navigate = useNavigate();
+    const goToModeSelect = () => {
+        navigate('/mode-select');
+    }
     return (
         <div className='min-h-screen flex items-center justify-center'>
             <div className='mx-12 my-12 w-full max-w-4xl'>
                 <section className='grid grid-cols-3 gap-2 mb-4'>
-                    <button className="w-full h-90 bg-white rounded-2xl text-black text-3xl font-bold hover:bg-gray-500 transition-all">
+                    <button onClick={goToModeSelect} className="w-full h-90 bg-white rounded-2xl text-black text-3xl font-bold hover:bg-gray-500 transition-all">
                         Crazy Eights
                     </button>
-                    <button className="w-full h-90 bg-white rounded-2xl text-black text-3xl font-bold hover:bg-gray-500 transition-all">
+                    <button onClick={goToModeSelect} className="w-full h-90 bg-white rounded-2xl text-black text-3xl font-bold hover:bg-gray-500 transition-all">
                         Uno
                     </button>
-                    <button className="w-full h-90 bg-white rounded-2xl text-black text-3xl font-bold hover:bg-gray-500 transition-all">
+                    <button onClick={goToModeSelect} className="w-full h-90 bg-white rounded-2xl text-black text-3xl font-bold hover:bg-gray-500 transition-all">
                         Stacking
                     </button>
                 </section>
