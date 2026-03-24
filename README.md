@@ -3,7 +3,7 @@
 Put here a short paragraph describing your project.
 Adding an screenshot or a mockup of your application in action would be nice.
 
-![This is a screenshot.](images.png)
+![Initial Front Page Design](frontpage.png)
 
 # Getting Started
 
