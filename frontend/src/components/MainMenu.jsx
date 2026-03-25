@@ -23,7 +23,7 @@ export default function MainMenu() {
                 </section>
                 <section className='flex justify-between items-center'>
                     <div className='flex items-center gap-3'>
-                        <button className='shrink-0 cursor-pointer'>
+                        <button className='shrink-0 cursor-pointer hover:scale-110 transition-all'>
                             <img src={placeholder_pfp} className='h-16 w-16 rounded-full object-cover'/>
                         </button>
                         <div className='flex flex-col gap-1'>
@@ -46,7 +46,7 @@ export default function MainMenu() {
                     </div>
 
                     <button className='w-12 h-12 cursor-pointer'>
-                        <img src={setting_gear} className='w-full h-full object-contain'/>
+                        <img src={setting_gear} className='w-full h-full object-contain hover:scale-150 transition-all'/>
                     </button>
                 </section>
             </div>

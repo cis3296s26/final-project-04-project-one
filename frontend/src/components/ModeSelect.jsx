@@ -16,8 +16,8 @@ export default function ModeSelect() {
         <div className='flex flex-col min-h-screen'>
             <section className='flex-grow'>
                 <section>
-                    <button onClick={goToHome} className=' '>
-                        <img src={back} className='m-5 w-16 h-16 cursor-pointer hover:w-20 h-20'></img>
+                    <button onClick={goToHome} className=''>
+                        <img src={back} className='m-5 w-12 h-12 cursor-pointer hover:scale-125 transition-all'></img>
                     </button>
                 </section>
                 <section className='grid grid-rows-4 justify-center gap-2'>
@@ -42,10 +42,10 @@ export default function ModeSelect() {
                     <span className='text-3xl font-bold'>5</span>
                     <div className='flex flex-col gap-2'>
                         <button className='w-7 h-7 flex items-center justify-center cursor-pointer'>
-                            <img src={arrow} className='w-7 h-7' />
+                            <img src={arrow} className='w-7 h-7 hover:scale-150 transition-all'/>
                         </button>
                         <button className='w-7 h-7 flex items-center justify-center cursor-pointer'>
-                            <img src={arrow} className='w-7 h-7 rotate-180' />
+                            <img src={arrow} className='w-7 h-7 hover:scale-150 transition-all rotate-180' />
                         </button>
                     </div>
                 </div>
@@ -54,10 +54,10 @@ export default function ModeSelect() {
                     <span className='text-3xl font-bold'>3</span>
                     <div className='flex flex-col gap-2'>
                         <button className='w-7 h-7 flex items-center justify-center cursor-pointer'>
-                            <img src={arrow} className='w-7 h-7' />
+                            <img src={arrow} className='w-7 h-7 hover:scale-150 transition-all' />
                         </button>
                         <button className='w-7 h-7 flex items-center justify-center cursor-pointer'>
-                            <img src={arrow} className='w-7 h-7 rotate-180' />
+                            <img src={arrow} className='w-7 h-7 hover:scale-150 transition-all rotate-180' />
                         </button>
                     </div>
                 </div>
@@ -66,10 +66,10 @@ export default function ModeSelect() {
                     <span className='text-3xl font-bold'>7</span>
                     <div className='flex flex-col gap-2'>
                         <button className='w-7 h-7 flex items-center justify-center cursor-pointer '>
-                            <img src={arrow} className='w-7 h-7' />
+                            <img src={arrow} className='w-7 h-7 hover:scale-150 transition-all' />
                         </button>
                         <button className='w-7 h-7 flex items-center justify-center cursor-pointer '>
-                            <img src={arrow} className='w-7 h-7 rotate-180' />
+                            <img src={arrow} className='w-7 h-7 hover:scale-150 transition-all rotate-180' />
                         </button>
                     </div>
                 </div>
@@ -78,10 +78,10 @@ export default function ModeSelect() {
                     <span className='text-3xl font-bold'>30</span>
                     <div className='flex flex-col gap-2'>
                         <button className='w-7 h-7 flex items-center justify-center cursor-pointer'>
-                            <img src={arrow} className='w-7 h-7' />
+                            <img src={arrow} className='w-7 h-7 hover:scale-150 transition-all' />
                         </button>
                         <button className='w-7 h-7 flex items-center justify-center cursor-pointer'>
-                            <img src={arrow} className='w-7 h-7 rotate-180' />
+                            <img src={arrow} className='w-7 h-7 hover:scale-150 transition-all rotate-180' />
                         </button>
                     </div>
                 </div>
