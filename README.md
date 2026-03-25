@@ -8,7 +8,7 @@ The system supports multiple game modes including classic Crazy Eights, Uno-like
 
 The project aims to provide a lightweight, accessible, and customizable card game experience that can be played directly from any modern web browser. It also includes AI-controlled opponents that make optimal moves based on the current game state.
 
-![Initial Front Page Design](frontpage.png)
+![Initial Front Page Design](./assets/frontpage.png)
 
 # Getting Started
 
