@@ -21,18 +21,18 @@ export default function ModeSelect() {
                     </button>
                 </section>
                 <section className='grid grid-rows-4 justify-center gap-2'>
-                    <button className='bg-white w-full h-20 hover:bg-gray-500'>
+                    <button className='bg-white w-full h-20 rounded-2xl hover:bg-gray-500 transition-all'>
                         vs. Bots
                     </button>
-                    <button className='bg-white w-full h-20 hover:bg-gray-500'>
+                    <button className='bg-white w-full h-20 rounded-2xl hover:bg-gray-500 transition-all'>
                         Public
                     </button>
-                    <button className='bg-white w-full h-20 hover:bg-gray-500'>
+                    <button className='bg-white w-full h-20 rounded-2xl hover:bg-gray-500 transition-all'>
                         Private
                     </button>
                     <div className='w-full h-20'>
                         <input type='text' placeholder='Room Code'/>
-                        <button className='bg-white hover:bg-gray-500'>join</button>
+                        <button className='bg-white hover:bg-gray-500 transition-all'>join</button>
                     </div>
                 </section>
             </section>
