@@ -1,6 +1,7 @@
-import './App.css'
-import MainMenu from './components/MainMenu'
+import './App.css';
+import MainMenu from './components/MainMenu';
 import ModeSelect from './components/ModeSelect';
+import CrazyEights from './components/CrazyEights';
 import { Routes, Route } from 'react-router-dom';
 
 export default function App() {
@@ -9,6 +10,7 @@ export default function App() {
       <Routes>
         <Route path="/" element={<MainMenu />} />
         <Route path="mode-select" element={<ModeSelect />} />
+        <Route path="/crazy-eights" element={<CrazyEights />}/>
       </Routes>
     </div>
   )
