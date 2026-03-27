@@ -5,6 +5,11 @@ import eightDiamonds from '../assets/cards/8_of_diamonds.svg';
 import threeHearts from '../assets/cards/3_of_hearts.svg';
 
 export default function CrazyEights() {
+    const handleCardPlay = (card) => {
+        console.log(`Played: ${card}`);
+        // game logic here
+    };
+
     return (
         <div className='grid h-screen w-screen grid-rows-[auto_1fr_auto] grid-cols-[auto_1fr_auto]'>
             {/* top hand */}
@@ -24,7 +29,6 @@ export default function CrazyEights() {
                 <img src={cardBack} className='w-35 h-50' />
                 <img src={twoClubs} className='w-35 h-50' />
             </section>
-
             {/* right hand */}
             <section className='row-start-2 col-start-3 flex flex-col justify-center items-center pr-2 -space-y-60'>
                 <img src={cardBack} className='w-35 h-50 -rotate-270' />
@@ -34,9 +38,19 @@ export default function CrazyEights() {
 
             {/* player hand */}
             <section className='col-start-1 col-end-4 flex flex-row justify-center items-end pb-2 -space-x-16'>
-                <img src={queenClubs} className='w-35 h-50' />
-                <img src={eightDiamonds} className='w-35 h-50' />
-                <img src={threeHearts} className='w-35 h-50' />
+                {[
+                    { src: queenClubs, name: 'Queen of Clubs' },
+                    { src: eightDiamonds, name: 'Eight of Diamonds' },
+                    { src: threeHearts, name: 'Three of Hearts' },
+                ].map((card) => (
+                    <button
+                        key={card.name}
+                        onClick={() => handleCardPlay(card.name)}
+                        className='transition-transform duration-150 hover:-translate-y-4 focus:outline-none cursor-pointer'
+                    >
+                        <img src={card.src} className='w-35 h-50' />
+                    </button>
+                ))}
             </section>
 
         </div>
