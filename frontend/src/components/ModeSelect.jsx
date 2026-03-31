@@ -11,6 +11,9 @@ export default function ModeSelect() {
     const goToHome = () => {
         navigate('/');
     }
+    const goToCrazyEights = () => {
+        navigate('/crazy-eights');
+    }
 
     return (
         <div className='flex flex-col min-h-screen'>
@@ -21,7 +24,7 @@ export default function ModeSelect() {
                     </button>
                 </section>
                 <section className='grid grid-rows-4 justify-center gap-2'>
-                    <button className='bg-white w-full h-20 rounded-2xl hover:bg-gray-500 transition-all'>
+                    <button onClick={goToCrazyEights} className='bg-white w-full h-20 rounded-2xl hover:bg-gray-500 transition-all'>
                         vs. Bots
                     </button>
                     <button className='bg-white w-full h-20 rounded-2xl hover:bg-gray-500 transition-all'>
