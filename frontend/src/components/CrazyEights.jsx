@@ -26,7 +26,7 @@ export default function CrazyEights() {
             </section>
             {/* middle cards */}
             <section className='row-start-2 col-start-2 flex flex-row justify-center items-center gap-6'>
-                <img src={cardBack} className='w-35 h-50' />
+                <img src={cardBack} className='w-35 h-50 cursor-pointer' />
                 <img src={twoClubs} className='w-35 h-50' />
             </section>
             {/* right hand */}
