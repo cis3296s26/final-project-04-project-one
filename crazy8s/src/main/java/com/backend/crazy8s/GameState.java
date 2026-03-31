@@ -1,5 +1,6 @@
+package com.backend.crazy8s;
+
 import java.util.ArrayList;
-import com.backend.crazy8s.Card;
 import java.util.List;
 
 public class GameState {
