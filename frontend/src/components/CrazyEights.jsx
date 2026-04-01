@@ -72,17 +72,16 @@ export default function CrazyEights() {
 
             {/* player hand */}
             <section className='col-start-1 col-end-4 flex flex-row justify-center items-end pb-2 -space-x-16'>
-                {[
-                    { src: queenClubs, name: 'Queen of Clubs' },
-                    { src: eightDiamonds, name: 'Eight of Diamonds' },
-                    { src: threeHearts, name: 'Three of Hearts' },
-                ].map((card) => (
+                {userHand.map((card, i) => (
                     <button
-                        key={card.name}
-                        onClick={() => handleCardPlay(card.name)}
+                        key={i}
+                        onClick={() => handleCardPlay(i)}
                         className='transition-transform duration-150 hover:-translate-y-4 focus:outline-none cursor-pointer'
                     >
-                        <img src={card.src} className='w-35 h-50' />
+                        <img
+                            src={getCardImage(card.rank, card.suit)}
+                            className='w-35 h-50'
+                        />
                     </button>
                 ))}
             </section>
