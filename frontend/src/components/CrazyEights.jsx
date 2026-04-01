@@ -35,7 +35,15 @@ export default function CrazyEights() {
             setMessage('');
         });
     };
-    
+
+    if (!gameState) return <div className="text-white text-center mt-10">Loading...</div>;
+
+    const userHand = gameState.hands[0];
+    const topCard = gameState.discardPile[gameState.discardPile.length - 1];
+    const opponent1Hand = gameState.hands[1]; // top
+    const opponent2Hand = gameState.hands[2]; // left
+    const opponent3Hand = gameState.hands[3]; // right
+
     return (
         <div className='grid h-screen w-screen grid-rows-[auto_1fr_auto] grid-cols-[auto_1fr_auto]'>
             {/* top hand */}
