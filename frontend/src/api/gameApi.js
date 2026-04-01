@@ -32,3 +32,23 @@ export async function newGame() {
         winner: null,
     };
 }
+
+export async function playCard(gameState, cardIndex, chosenSuit = null) {
+    // make this return the fetched info from the API;
+
+    return gameState; // placeholder
+}
+
+export async function drawCard(gameState) {
+    // same thing here, with the draw state.
+
+    const newState = { ...gameState };
+    if (newState.deck.length > 0) {
+        const drawn = newState.deck[0];
+        newState.deck = newState.deck.slice(1);
+        newState.hands = newState.hands.map((h, i) =>
+            i === 0 ? [...h, drawn] : h
+        );
+    }
+    return newState;
+}
