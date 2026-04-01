@@ -13,3 +13,7 @@ export function getCardImage(rank, suit) {
     const s = suitMap[suit];
     return new URL(`../assets/cards/${r}_of_${s}.svg`, import.meta.url).href;
 }
+
+export function getCardBack() {
+    return new URL('../assets/cards/card_back.png', import.meta.url).href;
+}
