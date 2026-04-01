@@ -1,6 +1,6 @@
 import cardBack from '../assets/cards/card_back.png';
 import twoClubs from '../assets/cards/2_of_clubs.svg';
-import queenClubs from '../assets/cards/queen_of_clubs2.svg';
+import queenClubs from '../assets/cards/queen_of_clubs.svg';
 import eightDiamonds from '../assets/cards/8_of_diamonds.svg';
 import threeHearts from '../assets/cards/3_of_hearts.svg';
 
