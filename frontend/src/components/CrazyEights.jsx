@@ -10,9 +10,18 @@ export default function CrazyEights() {
     useEffect(() => {
         newGame().then(setGameState);
     }, []);
-    
-    const handleCardPlay = (card) => {
-        
+
+    const handleCardPlay = async (cardIndex) => {
+        try {
+            const updated = await playCard(gameState, cardIndex);
+            setGameState(updated);
+            if (updated.status == "FINISHED") {
+                setMessage(`${updated.winner} wins!`);
+            }
+        } catch (e) {
+            setMessage("Invalid Move.");
+            console.log(e);
+        }
     };
 
     return (
