@@ -1,13 +1,18 @@
-import cardBack from '../assets/cards/card_back.png';
-import twoClubs from '../assets/cards/2_of_clubs.svg';
-import queenClubs from '../assets/cards/queen_of_clubs.svg';
-import eightDiamonds from '../assets/cards/8_of_diamonds.svg';
-import threeHearts from '../assets/cards/3_of_hearts.svg';
+import { useState, useEffect } from 'react';
+import { newGame, playCard, drawCard } from '../api/gameApi';
+import { getCardImage, getCardBack } from '../utils/cardImages';
 
 export default function CrazyEights() {
+    const [gameState, setGameState] = useState(null);
+    const [message, setMessage] = useState('');
+
+    // Start game on mount
+    useEffect(() => {
+        newGame().then(setGameState);
+    }, []);
+    
     const handleCardPlay = (card) => {
-        console.log(`Played: ${card}`);
-        // game logic here
+        
     };
 
     return (
