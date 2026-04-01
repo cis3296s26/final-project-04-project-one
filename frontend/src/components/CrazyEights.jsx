@@ -60,8 +60,31 @@ export default function CrazyEights() {
             </section>
             {/* middle cards */}
             <section className='row-start-2 col-start-2 flex flex-row justify-center items-center gap-6'>
-                <img src={cardBack} className='w-35 h-50 cursor-pointer' />
-                <img src={twoClubs} className='w-35 h-50' />
+                {message && (
+                    <p className='text-white text-lg font-bold'>{message}</p>
+                )}
+                <p className='text-white text-sm'>
+                    Current Suit: {gameState.currentSuit}
+                </p>
+                <div className='flex flex-row justify-center items-center gap-6'>
+                    {/* Draw pile */}
+                    <button onClick={handleDraw} className='cursor-pointer hover:scale-105 transition-transform'>
+                        <img src={getCardBack()} className='w-35 h-50' />
+                    </button>
+                    {/* Discard pile */}
+                    <img
+                        src={getCardImage(topCard.rank, topCard.suit)}
+                        className='w-35 h-50'
+                    />
+                </div>
+                {gameState.status === "FINISHED" && (
+                    <button
+                        onClick={handleNewGame}
+                        className='mt-4 px-6 py-2 bg-white text-black rounded font-bold hover:bg-gray-200'
+                    >
+                        New Game
+                    </button>
+                )}
             </section>
             {/* right hand */}
             <section className='row-start-2 col-start-3 flex flex-col justify-center items-center pr-2 -space-y-60'>
