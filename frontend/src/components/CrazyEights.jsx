@@ -29,6 +29,13 @@ export default function CrazyEights() {
         setGameState(updated);
     }
 
+    const handleNewGame = () => {
+        newGame().then(state => {
+            setGameState(state);
+            setMessage('');
+        });
+    };
+    
     return (
         <div className='grid h-screen w-screen grid-rows-[auto_1fr_auto] grid-cols-[auto_1fr_auto]'>
             {/* top hand */}
