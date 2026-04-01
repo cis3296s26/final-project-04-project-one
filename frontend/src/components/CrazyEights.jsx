@@ -54,7 +54,7 @@ export default function CrazyEights() {
             </section>
             {/* left hand */}
             <section className='row-start-2 flex flex-col justify-center items-center pl-2 -space-y-60'>
-                {opponent1Hand.map((_, i) => (
+                {opponent2Hand.map((_, i) => (
                     <img key={i} src={getCardBack()} className='w-35 h-50 rotate-90' />
                 ))}
             </section>
