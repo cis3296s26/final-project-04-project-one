@@ -1,10 +1,15 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { newGame, playCard, drawCard } from '../api/gameApi';
 import { getCardImage, getCardBack } from '../utils/cardImages';
 
 export default function CrazyEights() {
     const [gameState, setGameState] = useState(null);
     const [message, setMessage] = useState('');
+    const [playedCardIndex, setPlayedCardIndex] = useState(null);
+    const [cardOffset, setCardOffset] = useState({ x: 0, y: 0 });
+
+    const discardRef = useRef(null);
+    const cardRefs = useRef([]);
 
     // Start game on mount
     useEffect(() => {
@@ -12,20 +17,42 @@ export default function CrazyEights() {
     }, []);
 
     const handleCardPlay = async (cardIndex) => {
-        try {
-            const updated = await playCard(gameState, cardIndex);
-            setGameState(updated);
-            if (updated.status === "FINISHED")
-                setMessage(`${updated.winner} wins!`);
-        } catch (e) {
-            setMessage(e.message || "Invalid move."); // ← just shows message, gameState untouched
+        // Calculate distance from clicked card to discard pile
+        const cardEl = cardRefs.current[cardIndex];
+        const discardEl = discardRef.current;
+
+        if (cardEl && discardEl) {
+            const cardRect = cardEl.getBoundingClientRect();
+            const discardRect = discardEl.getBoundingClientRect();
+
+            setCardOffset({
+                x: discardRect.left - cardRect.left + (discardRect.width - cardRect.width) / 2,
+                y: discardRect.top - cardRect.top + (discardRect.height - cardRect.height) / 2,
+            });
         }
+
+        setPlayedCardIndex(cardIndex);
+
+        setTimeout(async () => {
+            try {
+                const updated = await playCard(gameState, cardIndex);
+                setGameState(updated);
+                setPlayedCardIndex(null);
+                setCardOffset({ x: 0, y: 0 });
+                if (updated.status === "FINISHED")
+                    setMessage(`${updated.winner} wins!`);
+            } catch (e) {
+                setPlayedCardIndex(null);
+                setCardOffset({ x: 0, y: 0 });
+                setMessage(e.message || "Invalid move.");
+            }
+        }, 400);
     };
 
     const handleDraw = async () => {
         const updated = await drawCard(gameState);
         setGameState(updated);
-    }
+    };
 
     const handleNewGame = () => {
         newGame().then(state => {
@@ -50,40 +77,36 @@ export default function CrazyEights() {
                     <img key={i} src={getCardBack()} className='w-35 h-50 rotate-180' />
                 ))}
             </section>
+
             {/* left hand */}
             <section className='row-start-2 flex flex-col justify-center items-center pl-2 -space-y-60'>
                 {opponent2Hand.map((_, i) => (
                     <img key={i} src={getCardBack()} className='w-35 h-50 rotate-90' />
                 ))}
             </section>
+
             {/* middle cards */}
-            <section className='row-start-2 col-start-2 flex flex-row justify-center items-center gap-6'>
-                {message && (
-                    <p className='text-white text-lg font-bold'>{message}</p>
-                )}
-                <p className='text-white text-sm'>
-                    Current Suit: {gameState.currentSuit}
-                </p>
+            <section className='row-start-2 col-start-2 flex flex-col justify-center items-center gap-4'>
+                {message && <p className='text-white text-lg font-bold'>{message}</p>}
+                <p className='text-white text-sm'>Current Suit: {gameState.currentSuit}</p>
                 <div className='flex flex-row justify-center items-center gap-6'>
-                    {/* Draw pile */}
                     <button onClick={handleDraw} className='cursor-pointer hover:scale-105 transition-transform'>
                         <img src={getCardBack()} className='w-35 h-50' />
                     </button>
-                    {/* Discard pile */}
-                    <img
-                        src={getCardImage(topCard.rank, topCard.suit)}
-                        className='w-35 h-50'
-                    />
+                    <div ref={discardRef}>
+                        <img
+                            src={getCardImage(topCard.rank, topCard.suit)}
+                            className='w-35 h-50'
+                        />
+                    </div>
                 </div>
                 {gameState.status === "FINISHED" && (
-                    <button
-                        onClick={handleNewGame}
-                        className='mt-4 px-6 py-2 bg-white text-black rounded font-bold hover:bg-gray-200'
-                    >
+                    <button onClick={handleNewGame} className='mt-4 px-6 py-2 bg-white text-black rounded font-bold hover:bg-gray-200'>
                         New Game
                     </button>
                 )}
             </section>
+
             {/* right hand */}
             <section className='row-start-2 col-start-3 flex flex-col justify-center items-center pr-2 -space-y-60'>
                 {opponent3Hand.map((_, i) => (
@@ -96,17 +119,24 @@ export default function CrazyEights() {
                 {userHand.map((card, i) => (
                     <button
                         key={i}
+                        ref={el => cardRefs.current[i] = el}
                         onClick={() => handleCardPlay(i)}
-                        className='transition-transform duration-150 hover:-translate-y-4 focus:outline-none cursor-pointer'
+                        style={
+                            playedCardIndex === i
+                                ? {
+                                    transform: `translate(${cardOffset.x}px, ${cardOffset.y}px)`,
+                                    transition: 'transform 0.4s ease-in-out',
+                                    zIndex: 50,
+                                    pointerEvents: 'none',
+                                }
+                                : {}
+                        }
+                        className='hover:-translate-y-4 focus:outline-none cursor-pointer'
                     >
-                        <img
-                            src={getCardImage(card.rank, card.suit)}
-                            className='w-35 h-50'
-                        />
+                        <img src={getCardImage(card.rank, card.suit)} className='w-35 h-50' />
                     </button>
                 ))}
             </section>
-
         </div>
-    )
+    );
 }
