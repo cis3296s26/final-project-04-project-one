@@ -15,12 +15,10 @@ export default function CrazyEights() {
         try {
             const updated = await playCard(gameState, cardIndex);
             setGameState(updated);
-            if (updated.status == "FINISHED") {
+            if (updated.status === "FINISHED")
                 setMessage(`${updated.winner} wins!`);
-            }
         } catch (e) {
-            setMessage("Invalid Move.");
-            console.log(e);
+            setMessage(e.message || "Invalid move."); // ← just shows message, gameState untouched
         }
     };
 
