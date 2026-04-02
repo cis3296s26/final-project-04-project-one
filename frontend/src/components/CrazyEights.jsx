@@ -16,15 +16,16 @@ export default function CrazyEights() {
         newGame().then(setGameState);
     }, []);
 
+    // helper
+    const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
     const handleCardPlay = async (cardIndex) => {
-        // Calculate distance from clicked card to discard pile
         const cardEl = cardRefs.current[cardIndex];
         const discardEl = discardRef.current;
 
         if (cardEl && discardEl) {
             const cardRect = cardEl.getBoundingClientRect();
             const discardRect = discardEl.getBoundingClientRect();
-
             setCardOffset({
                 x: discardRect.left - cardRect.left + (discardRect.width - cardRect.width) / 2,
                 y: discardRect.top - cardRect.top + (discardRect.height - cardRect.height) / 2,
@@ -36,11 +37,23 @@ export default function CrazyEights() {
         setTimeout(async () => {
             try {
                 const updated = await playCard(gameState, cardIndex);
-                setGameState(updated);
                 setPlayedCardIndex(null);
                 setCardOffset({ x: 0, y: 0 });
+
+                // Show each CPU turn one at a time with a delay
+                const log = updated.turnLog || [];
+                for (let i = 0; i < log.length; i++) {
+                    await delay(800);
+                    setMessage(log[i]);
+                }
+
+                await delay(600);
+                setGameState(updated);
+                setMessage('');
+
                 if (updated.status === "FINISHED")
                     setMessage(`${updated.winner} wins!`);
+
             } catch (e) {
                 setPlayedCardIndex(null);
                 setCardOffset({ x: 0, y: 0 });
