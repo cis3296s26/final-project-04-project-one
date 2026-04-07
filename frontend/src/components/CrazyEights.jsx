@@ -34,20 +34,39 @@ export default function CrazyEights() {
 
         setPlayedCardIndex(cardIndex);
 
+        const playedCard = gameState.hands[0][cardIndex];
+        setGameState(prev => ({
+            ...prev,
+            discardPile: [...prev.discardPile, playedCard],
+        }));
+
         setTimeout(async () => {
             try {
                 const updated = await playCard(gameState, cardIndex);
                 setPlayedCardIndex(null);
                 setCardOffset({ x: 0, y: 0 });
 
-                // Show each CPU turn one at a time with a delay
                 const log = updated.turnLog || [];
+
+                // Replay each CPU turn: update top card visually, then show message
                 for (let i = 0; i < log.length; i++) {
+                    const entry = log[i];
+                    await delay(600);
+
+                    if (entry.cardPlayed) {
+                        // Temporarily update the discard pile to show this card
+                        setGameState(prev => ({
+                            ...prev,
+                            discardPile: [...prev.discardPile, entry.cardPlayed],
+                            currentSuit: entry.cardPlayed.suit,
+                        }));
+                    }
+
+                    setMessage(entry.message);
                     await delay(800);
-                    setMessage(log[i]);
                 }
 
-                await delay(600);
+                await delay(400);
                 setGameState(updated);
                 setMessage('');
 
