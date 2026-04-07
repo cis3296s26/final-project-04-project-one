@@ -14,6 +14,7 @@ export default function CrazyEights() {
     const opponent1Ref = useRef(null);
     const opponent2Ref = useRef(null);
     const opponent3Ref = useRef(null);
+    const deckRef = useRef(null);
 
     // Start game on mount
     useEffect(() => {
@@ -22,6 +23,40 @@ export default function CrazyEights() {
 
     // helper
     const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+    // animate flying from deck helper function
+    const animateFlyFromDeck = async (targetRef) => {
+        const deckEl = deckRef.current;
+        const targetEl = targetRef.current || targetRef; // support both ref and element
+        if (!deckEl || !targetEl) return;
+
+        const deckRect = deckEl.getBoundingClientRect();
+        const targetRect = targetEl.getBoundingClientRect();
+
+        setFlyingCard({
+            fromRect: {
+                left: deckRect.left,
+                top: deckRect.top,
+                width: deckRect.width,
+                height: deckRect.height,
+            },
+            offset: { x: 0, y: 0 },
+        });
+
+        await delay(50);
+
+        setFlyingCard(prev => ({
+            ...prev,
+            offset: {
+                x: targetRect.left - deckRect.left + (targetRect.width - deckRect.width) / 2,
+                y: targetRect.top - deckRect.top + (targetRect.height - deckRect.height) / 2,
+            },
+        }));
+
+        await delay(450);
+        setFlyingCard(null);
+    };
+
 
     const handleCardPlay = async (cardIndex) => {
         const cardEl = cardRefs.current[cardIndex];
@@ -201,7 +236,7 @@ export default function CrazyEights() {
                 {message && <p className='text-white text-lg font-bold'>{message}</p>}
                 <p className='text-white text-sm'>Current Suit: {gameState.currentSuit}</p>
                 <div className='flex flex-row justify-center items-center gap-6'>
-                    <button onClick={handleDraw} className='cursor-pointer hover:scale-105 transition-transform'>
+                    <button ref={deckRef} onClick={handleDraw} className='cursor-pointer hover:scale-105 transition-transform'>
                         <img src={getCardBack()} className='w-35 h-50' />
                     </button>
                     <div ref={discardRef}>
