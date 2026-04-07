@@ -85,6 +85,7 @@ export default function CrazyEights() {
     setPlayedCardIndex(cardIndex);
 
     const playedCard = gameState.hands[0][cardIndex];
+    const previousGameState = gameState;
     setGameState((prev) => ({
       ...prev,
       discardPile: [...prev.discardPile, playedCard],
@@ -176,6 +177,7 @@ export default function CrazyEights() {
       } catch (e) {
         setPlayedCardIndex(null);
         setCardOffset({ x: 0, y: 0 });
+        setGameState(previousGameState);
         setMessage(e.message || "Invalid move.");
       }
     }, 400);
@@ -313,7 +315,7 @@ export default function CrazyEights() {
       )}
       {/* top hand */}
       <section
-        ref={opponent1Ref}
+        ref={opponent2Ref}
         className="col-start-1 col-end-4 flex flex-row justify-center items-start pt-2 -space-x-16"
       >
         {opponent1Hand.map((_, i) => (
@@ -323,7 +325,7 @@ export default function CrazyEights() {
 
       {/* left hand */}
       <section
-        ref={opponent2Ref}
+        ref={opponent1Ref}
         className="row-start-2 flex flex-col justify-center items-center pl-2 -space-y-60"
       >
         {opponent2Hand.map((_, i) => (
