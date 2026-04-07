@@ -15,7 +15,7 @@ public class GameState {
     private int penaltyDraw;
     private String status;
     private String winner;
-    private List<String> turnLog;
+    private List<TurnLogEntry> turnLog;
 
     public GameState() {}
 
@@ -44,7 +44,7 @@ public class GameState {
     public int getPenaltyDraw() { return penaltyDraw; }
     public String getStatus() { return status; }
     public String getWinner() { return winner; }
-    public List<String> getTurnLog() { return turnLog; }
+    public List<TurnLogEntry> getTurnLog() { return turnLog; }
 
     // Setters
     public void setGameId(String gameId) { this.gameId = gameId; }
@@ -58,5 +58,5 @@ public class GameState {
     public void setPenaltyDraw(int penaltyDraw) { this.penaltyDraw = penaltyDraw; }
     public void setStatus(String status) { this.status = status; }
     public void setWinner(String winner) { this.winner = winner; }
-    public void setTurnLog(List<String> turnLog) { this.turnLog = turnLog; }
+    public void setTurnLog(List<TurnLogEntry> turnLog) { this.turnLog = turnLog; }
 }
