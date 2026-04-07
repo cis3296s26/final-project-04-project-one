@@ -295,6 +295,22 @@ export default function CrazyEights() {
 
   return (
     <div className="grid h-screen w-screen grid-rows-[auto_1fr_auto] grid-cols-[auto_1fr_auto]">
+      {flyingCard && (
+        <img
+          src={getCardBack()}
+          style={{
+            position: "fixed",
+            left: flyingCard.fromRect.left,
+            top: flyingCard.fromRect.top,
+            width: flyingCard.fromRect.width,
+            height: flyingCard.fromRect.height,
+            transform: `translate(${flyingCard.offset.x}px, ${flyingCard.offset.y}px)`,
+            transition: "transform 0.4s ease-in-out",
+            zIndex: 100,
+            pointerEvents: "none",
+          }}
+        />
+      )}
       {/* top hand */}
       <section
         ref={opponent1Ref}
@@ -303,22 +319,6 @@ export default function CrazyEights() {
         {opponent1Hand.map((_, i) => (
           <img key={i} src={getCardBack()} className="w-35 h-50 rotate-180" />
         ))}
-        {flyingCard && (
-          <img
-            src={getCardBack()}
-            style={{
-              position: "fixed",
-              left: flyingCard.fromRect.left,
-              top: flyingCard.fromRect.top,
-              width: flyingCard.fromRect.width,
-              height: flyingCard.fromRect.height,
-              transform: `translate(${flyingCard.offset.x}px, ${flyingCard.offset.y}px)`,
-              transition: "transform 0.4s ease-in-out",
-              zIndex: 100,
-              pointerEvents: "none",
-            }}
-          />
-        )}
       </section>
 
       {/* left hand */}
@@ -329,22 +329,6 @@ export default function CrazyEights() {
         {opponent2Hand.map((_, i) => (
           <img key={i} src={getCardBack()} className="w-35 h-50 rotate-90" />
         ))}
-        {flyingCard && (
-          <img
-            src={getCardBack()}
-            style={{
-              position: "fixed",
-              left: flyingCard.fromRect.left,
-              top: flyingCard.fromRect.top,
-              width: flyingCard.fromRect.width,
-              height: flyingCard.fromRect.height,
-              transform: `translate(${flyingCard.offset.x}px, ${flyingCard.offset.y}px)`,
-              transition: "transform 0.4s ease-in-out",
-              zIndex: 100,
-              pointerEvents: "none",
-            }}
-          />
-        )}
       </section>
 
       {/* middle cards */}
@@ -386,22 +370,6 @@ export default function CrazyEights() {
         {opponent3Hand.map((_, i) => (
           <img key={i} src={getCardBack()} className="w-35 h-50 -rotate-90" />
         ))}
-        {flyingCard && (
-          <img
-            src={getCardBack()}
-            style={{
-              position: "fixed",
-              left: flyingCard.fromRect.left,
-              top: flyingCard.fromRect.top,
-              width: flyingCard.fromRect.width,
-              height: flyingCard.fromRect.height,
-              transform: `translate(${flyingCard.offset.x}px, ${flyingCard.offset.y}px)`,
-              transition: "transform 0.4s ease-in-out",
-              zIndex: 100,
-              pointerEvents: "none",
-            }}
-          />
-        )}
       </section>
 
       {/* player hand */}
