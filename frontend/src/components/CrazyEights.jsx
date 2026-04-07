@@ -7,9 +7,13 @@ export default function CrazyEights() {
     const [message, setMessage] = useState('');
     const [playedCardIndex, setPlayedCardIndex] = useState(null);
     const [cardOffset, setCardOffset] = useState({ x: 0, y: 0 });
+    const [flyingCard, setFlyingCard] = useState(null); 
 
     const discardRef = useRef(null);
     const cardRefs = useRef([]);
+    const opponent1Ref = useRef(null);
+    const opponent2Ref = useRef(null);
+    const opponent3Ref = useRef(null);
 
     // Start game on mount
     useEffect(() => {
@@ -50,21 +54,63 @@ export default function CrazyEights() {
 
                 // Replay each CPU turn: update top card visually, then show message
                 for (let i = 0; i < log.length; i++) {
-                    const entry = log[i];
-                    await delay(600);
+    const entry = log[i];
 
-                    if (entry.cardPlayed) {
-                        // Temporarily update the discard pile to show this card
-                        setGameState(prev => ({
-                            ...prev,
-                            discardPile: [...prev.discardPile, entry.cardPlayed],
-                            currentSuit: entry.cardPlayed.suit,
-                        }));
-                    }
+    if (entry.cardPlayed) {
+        // Figure out which opponent played (parse from message)
+        let opponentRef = opponent1Ref;
+        if (entry.message.startsWith("Player 3")) opponentRef = opponent2Ref;
+        if (entry.message.startsWith("Player 4")) opponentRef = opponent3Ref;
 
-                    setMessage(entry.message);
-                    await delay(800);
-                }
+        const fromEl = opponentRef.current;
+        const discardEl = discardRef.current;
+
+        if (fromEl && discardEl) {
+            const fromRect = fromEl.getBoundingClientRect();
+            const discardRect = discardEl.getBoundingClientRect();
+
+            // Start the card at the opponent's position
+            setFlyingCard({
+                fromRect: {
+                    left: fromRect.left + fromRect.width / 2 - 70,
+                    top: fromRect.top + fromRect.height / 2 - 98,
+                    width: 140,
+                    height: 196,
+                },
+                offset: { x: 0, y: 0 },
+            });
+
+            await delay(50); // let the element mount first
+
+            // Fly it to the discard pile
+            const discardCenter = {
+                x: discardRect.left + discardRect.width / 2,
+                y: discardRect.top + discardRect.height / 2,
+            };
+            setFlyingCard(prev => ({
+                ...prev,
+                offset: {
+                    x: discardCenter.x - (fromRect.left + fromRect.width / 2),
+                    y: discardCenter.y - (fromRect.top + fromRect.height / 2),
+                },
+            }));
+
+            await delay(450); // wait for animation to finish
+
+            // Swap to the real card on the discard pile, remove flying card
+            setFlyingCard(null);
+            setGameState(prev => ({
+                ...prev,
+                discardPile: [...prev.discardPile, entry.cardPlayed],
+                currentSuit: entry.cardPlayed.suit,
+            }));
+        }
+
+        await delay(600);
+    } else {
+        await delay(600);
+    }
+}
 
                 await delay(400);
                 setGameState(updated);
@@ -100,21 +146,54 @@ export default function CrazyEights() {
     const opponent1Hand = gameState.hands[1]; // top
     const opponent2Hand = gameState.hands[2]; // left
     const opponent3Hand = gameState.hands[3]; // right
+    
 
     return (
         <div className='grid h-screen w-screen grid-rows-[auto_1fr_auto] grid-cols-[auto_1fr_auto]'>
             {/* top hand */}
-            <section className='col-start-1 col-end-4 flex flex-row justify-center items-start pt-2 -space-x-16'>
+            <section ref={opponent1Ref} className='col-start-1 col-end-4 flex flex-row justify-center items-start pt-2 -space-x-16'>
                 {opponent1Hand.map((_, i) => (
                     <img key={i} src={getCardBack()} className='w-35 h-50 rotate-180' />
                 ))}
+                {flyingCard && (
+                    <img
+                        src={getCardBack()}
+                        style={{
+                            position: 'fixed',
+                            left: flyingCard.fromRect.left,
+                            top: flyingCard.fromRect.top,
+                            width: flyingCard.fromRect.width,
+                            height: flyingCard.fromRect.height,
+                            transform: `translate(${flyingCard.offset.x}px, ${flyingCard.offset.y}px)`,
+                            transition: 'transform 0.4s ease-in-out',
+                            zIndex: 100,
+                            pointerEvents: 'none',
+                        }}
+                    />
+                )}
             </section>
 
             {/* left hand */}
-            <section className='row-start-2 flex flex-col justify-center items-center pl-2 -space-y-60'>
+            <section ref={opponent2Ref} className='row-start-2 flex flex-col justify-center items-center pl-2 -space-y-60'>
                 {opponent2Hand.map((_, i) => (
                     <img key={i} src={getCardBack()} className='w-35 h-50 rotate-90' />
                 ))}
+                {flyingCard && (
+                    <img
+                        src={getCardBack()}
+                        style={{
+                            position: 'fixed',
+                            left: flyingCard.fromRect.left,
+                            top: flyingCard.fromRect.top,
+                            width: flyingCard.fromRect.width,
+                            height: flyingCard.fromRect.height,
+                            transform: `translate(${flyingCard.offset.x}px, ${flyingCard.offset.y}px)`,
+                            transition: 'transform 0.4s ease-in-out',
+                            zIndex: 100,
+                            pointerEvents: 'none',
+                        }}
+                    />
+                )}
             </section>
 
             {/* middle cards */}
@@ -140,10 +219,26 @@ export default function CrazyEights() {
             </section>
 
             {/* right hand */}
-            <section className='row-start-2 col-start-3 flex flex-col justify-center items-center pr-2 -space-y-60'>
+            <section ref={opponent3Ref} className='row-start-2 col-start-3 flex flex-col justify-center items-center pr-2 -space-y-60'>
                 {opponent3Hand.map((_, i) => (
                     <img key={i} src={getCardBack()} className='w-35 h-50 -rotate-90' />
                 ))}
+                {flyingCard && (
+                    <img
+                        src={getCardBack()}
+                        style={{
+                            position: 'fixed',
+                            left: flyingCard.fromRect.left,
+                            top: flyingCard.fromRect.top,
+                            width: flyingCard.fromRect.width,
+                            height: flyingCard.fromRect.height,
+                            transform: `translate(${flyingCard.offset.x}px, ${flyingCard.offset.y}px)`,
+                            transition: 'transform 0.4s ease-in-out',
+                            zIndex: 100,
+                            pointerEvents: 'none',
+                        }}
+                    />
+                )}
             </section>
 
             {/* player hand */}
