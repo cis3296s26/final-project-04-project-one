@@ -103,7 +103,7 @@ public class GameService {
 
             // Handle skip
             if (state.isSkipNext()) {
-                state.getTurnLog().add(name + " was skipped.");
+                state.getTurnLog().add(new TurnLogEntry(name + " was skipped.", null));
                 state.setSkipNext(false);
                 advancePlayer(state);
                 continue;
@@ -115,7 +115,7 @@ public class GameService {
                 for (int i = 0; i < amount; i++)
                     if (!state.getDeck().isEmpty())
                         hand.add(state.getDeck().remove(0));
-                state.getTurnLog().add(name + " drew " + amount + " cards.");
+                state.getTurnLog().add(new TurnLogEntry(name + " drew " + amount + " cards.", null));
                 state.setPenaltyDraw(0);
                 advancePlayer(state);
                 continue;
@@ -150,20 +150,20 @@ public class GameService {
                 // CPU picks most common suit in hand when playing an 8
                 String chosenSuit = cardToPlay.getRank().equals("8") ? pickBestSuit(hand) : null;
                 applySpecialCard(cardToPlay, state, chosenSuit);
-                state.getTurnLog().add(name + " played " + cardToPlay + ".");
+                state.getTurnLog().add(new TurnLogEntry(name + " played " + cardToPlay + ".", cardToPlay));
             } else {
                 if (!state.getDeck().isEmpty()) {
                     hand.add(state.getDeck().remove(0));
-                    state.getTurnLog().add(name + " drew a card.");
+                    state.getTurnLog().add(new TurnLogEntry(name + " drew a card.", null));
                 } else {
-                    state.getTurnLog().add(name + " was skipped.");
+                    state.getTurnLog().add(new TurnLogEntry(name + " was skipped.", null));
                 }
             }
 
             if (hand.isEmpty()) {
                 state.setStatus("FINISHED");
                 state.setWinner(name);
-                state.getTurnLog().add(name + " wins!");
+                state.getTurnLog().add(new TurnLogEntry(name + " wins!", null));
                 return;
             }
 
