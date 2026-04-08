@@ -185,7 +185,7 @@ export default function CrazyEights() {
 
   const handleDraw = async () => {
     // Find the user hand section to fly the card toward
-    // We can just use the cardRefs area — or approximate with a fixed bottom target
+    // We can just use the cardRefs area or approximate with a fixed bottom target
     const deckEl = deckRef.current;
     if (deckEl) {
       const deckRect = deckEl.getBoundingClientRect();
