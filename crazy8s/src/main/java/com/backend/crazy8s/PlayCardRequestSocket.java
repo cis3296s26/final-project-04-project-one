@@ -3,10 +3,12 @@ package com.backend.crazy8s;
 import lombok.Data;
 
 @Data
-public class PlayCardRequest {
+public class PlayCardRequestSocket {
+    private GameState state;
     private int cardIndex;
     private String chosenSuit;
 
-    public PlayCardRequest() {
+    public PlayCardRequestSocket() {
+
     }
 }
