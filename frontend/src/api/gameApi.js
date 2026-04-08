@@ -8,13 +8,18 @@ export async function newGame() {
 }
 
 export async function playCard(gameState, cardIndex, chosenSuit = null) {
-    return fetch(`http://localhost:8080/api/game/${gameState.gameId}/play`, {
+    const response = await fetch(`http://localhost:8080/api/game/${gameState.gameId}/play`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ cardIndex, chosenSuit })
-    }).then(res => res.json());
-    
-    // return gameState;
+    });
+
+    if (!response.ok) {
+        const errorMsg = await response.text();
+        throw new Error(errorMsg || "Invalid move.");
+    }
+
+    return response.json();
 }
 
 export async function drawCard(gameState) {

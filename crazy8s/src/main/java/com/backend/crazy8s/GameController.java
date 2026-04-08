@@ -1,5 +1,6 @@
 package com.backend.crazy8s;
 
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.util.HashMap;
 import java.util.Map;
@@ -42,11 +43,16 @@ public class GameController {
     }
 
     @PostMapping("/{gameId}/play")
-    public GameState playCard(@PathVariable String gameId, @RequestBody PlayCardRequest request) {
+    public ResponseEntity<?> playCard(@PathVariable String gameId, @RequestBody PlayCardRequest request) {
         GameState state = games.get(gameId);
         if (state == null) {
-            throw new RuntimeException("Game not found");
+            return ResponseEntity.status(404).body("Game not found");
         }
-        return gameService.playCard(state, request.getCardIndex(), request.getChosenSuit());
+        try {
+            GameState updated = gameService.playCard(state, request.getCardIndex(), request.getChosenSuit());
+            return ResponseEntity.ok(updated);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 }

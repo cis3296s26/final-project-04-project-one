@@ -15,6 +15,7 @@ public class GameState {
     private int penaltyDraw;
     private String status;
     private String winner;
+    private List<TurnLogEntry> turnLog;
 
     public GameState() {}
 
@@ -28,6 +29,7 @@ public class GameState {
         this.skipNext = false;
         this.penaltyDraw = 0;
         this.status = "IN_PROGRESS";
+        this.turnLog = new ArrayList<>();
     }
 
     // Getters
@@ -42,6 +44,7 @@ public class GameState {
     public int getPenaltyDraw() { return penaltyDraw; }
     public String getStatus() { return status; }
     public String getWinner() { return winner; }
+    public List<TurnLogEntry> getTurnLog() { return turnLog; }
 
     // Setters
     public void setGameId(String gameId) { this.gameId = gameId; }
@@ -55,4 +58,5 @@ public class GameState {
     public void setPenaltyDraw(int penaltyDraw) { this.penaltyDraw = penaltyDraw; }
     public void setStatus(String status) { this.status = status; }
     public void setWinner(String winner) { this.winner = winner; }
+    public void setTurnLog(List<TurnLogEntry> turnLog) { this.turnLog = turnLog; }
 }

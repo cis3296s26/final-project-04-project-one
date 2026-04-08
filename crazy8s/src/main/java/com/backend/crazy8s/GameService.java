@@ -45,6 +45,7 @@ public class GameService {
 
     // Draw Card (User)
     public GameState drawCard(GameState state) {
+        state.getTurnLog().clear();
         if (!state.getDeck().isEmpty()) {
             Card drawn = state.getDeck().remove(0);
             state.getHands().get(0).add(drawn);
@@ -58,6 +59,7 @@ public class GameService {
 
     // Play Card (User)
     public GameState playCard(GameState state, int cardIndex, String chosenSuit) {
+        state.getTurnLog().clear();
         List<Card> userHand = state.getHands().get(0);
         Card topCard = getTopCard(state);
 
@@ -97,10 +99,11 @@ public class GameService {
         while (state.getCurrentPlayer() != 0 && state.getStatus().equals("IN_PROGRESS")) {
             int current = state.getCurrentPlayer();
             List<Card> hand = state.getHands().get(current);
-            Card topCard = getTopCard(state);
+            String name = PLAYER_NAMES[current];
 
             // Handle skip
             if (state.isSkipNext()) {
+                state.getTurnLog().add(new TurnLogEntry(name + " was skipped.", null));
                 state.setSkipNext(false);
                 advancePlayer(state);
                 continue;
@@ -108,9 +111,11 @@ public class GameService {
 
             // Handle penalty draw
             if (state.getPenaltyDraw() > 0) {
-                for (int i = 0; i < state.getPenaltyDraw(); i++)
+                int amount = state.getPenaltyDraw();
+                for (int i = 0; i < amount; i++)
                     if (!state.getDeck().isEmpty())
                         hand.add(state.getDeck().remove(0));
+                state.getTurnLog().add(new TurnLogEntry(name + " drew " + amount + " cards.", null));
                 state.setPenaltyDraw(0);
                 advancePlayer(state);
                 continue;
@@ -118,6 +123,8 @@ public class GameService {
 
             // Try to play: match rank or suit first
             Card cardToPlay = null;
+            Card topCard = getTopCard(state);
+
             for (Card c : hand) {
                 if (c.getRank().equals(topCard.getRank()) || c.getSuit().equals(state.getCurrentSuit())) {
                     cardToPlay = c;
@@ -143,17 +150,21 @@ public class GameService {
                 // CPU picks most common suit in hand when playing an 8
                 String chosenSuit = cardToPlay.getRank().equals("8") ? pickBestSuit(hand) : null;
                 applySpecialCard(cardToPlay, state, chosenSuit);
-
-                // Check if CPU won
-                if (hand.isEmpty()) {
-                    state.setStatus("FINISHED");
-                    state.setWinner(PLAYER_NAMES[current]);
-                    return;
-                }
+                state.getTurnLog().add(new TurnLogEntry(name + " played " + cardToPlay + ".", cardToPlay));
             } else {
-                // Draw a card if no valid play
-                if (!state.getDeck().isEmpty())
+                if (!state.getDeck().isEmpty()) {
                     hand.add(state.getDeck().remove(0));
+                    state.getTurnLog().add(new TurnLogEntry(name + " drew a card.", null));
+                } else {
+                    state.getTurnLog().add(new TurnLogEntry(name + " was skipped.", null));
+                }
+            }
+
+            if (hand.isEmpty()) {
+                state.setStatus("FINISHED");
+                state.setWinner(name);
+                state.getTurnLog().add(new TurnLogEntry(name + " wins!", null));
+                return;
             }
 
             advancePlayer(state);
