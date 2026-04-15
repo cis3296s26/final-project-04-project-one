@@ -1,13 +1,24 @@
 package com.backend.crazy8s;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+
 import org.springframework.stereotype.Service;
-import java.util.*;
 
 @Service
 public class GameService {
 
-    private static final String[] SUITS = {"Hearts", "Diamonds", "Clubs", "Spades"};
-    private static final String[] RANKS = {"Ace", "2", "3", "4", "5", "6", "7", "8", "9", "10", "Jack", "Queen", "King"};
+    private final Ruleset ruleset;
+
+    public GameService(Ruleset ruleset) {
+        this.ruleset = ruleset;
+    }
+
+    /* Change this once players are implemented */
     private static final String[] PLAYER_NAMES = {"User", "Player 2", "Player 3", "Player 4"};
 
     // Create Game
@@ -16,10 +27,7 @@ public class GameService {
         GameState state = new GameState(gameId);
 
         // Build and shuffle deck
-        List<Card> deck = new ArrayList<>();
-        for (String suit : SUITS)
-            for (String rank : RANKS)
-                deck.add(new Card(rank, suit));
+        List<Card> deck = createDeck();
         Collections.shuffle(deck);
         state.setDeck(deck);
 
@@ -46,13 +54,25 @@ public class GameService {
     // Draw Card (User)
     public GameState drawCard(GameState state) {
         state.getTurnLog().clear();
+
+        // draw card penalty
+        if (state.getPenaltyDraw() > 0) {
+            for (int i = 0; i < state.getPenaltyDraw(); i++) {
+                Card drawn = state.getDeck().remove(0);
+                state.getHands().get(0).add(drawn);
+            }
+            advancePlayer(state);
+        }
+
+        /* Add on empty behavior */
+        // voluntarily draw card
         if (!state.getDeck().isEmpty()) {
             Card drawn = state.getDeck().remove(0);
             state.getHands().get(0).add(drawn);
+            advancePlayer(state);
         }
 
-        // Advance to next player then run CPU turns
-        advancePlayer(state);
+        /* Change when players are added */ 
         processCpuTurns(state);
         return state;
     }
@@ -60,30 +80,31 @@ public class GameService {
     // Play Card (User)
     public GameState playCard(GameState state, int cardIndex, String chosenSuit) {
         state.getTurnLog().clear();
-        List<Card> userHand = state.getHands().get(0);
-        Card topCard = getTopCard(state);
+        List<Card> currentHand = state.getHands().get(state.getCurrentPlayer());
 
-        if (cardIndex < 0 || cardIndex >= userHand.size())
+        // Validate selection
+        if (cardIndex < 0 || cardIndex >= currentHand.size())
             throw new IllegalArgumentException("Invalid card index.");
 
-        Card card = userHand.get(cardIndex);
+        Card card = currentHand.get(cardIndex);
 
         // Validate move
-        if (!isValidPlay(card, topCard, state.getCurrentSuit()))
+        if (!isValidPlay(state, card))
             throw new IllegalArgumentException("Invalid move.");
 
         // Play the card
-        userHand.remove(cardIndex);
+        currentHand.remove(cardIndex);
         state.getDiscardPile().add(card);
         state.setCurrentSuit(card.getSuit());
 
         // Handle special cards
-        applySpecialCard(card, state, chosenSuit);
+        applyEffect(card, state, chosenSuit);
 
-        // Check if user won
-        if (userHand.isEmpty()) {
+        // Check if player won
+        if (currentHand.isEmpty()) {
             state.setStatus("FINISHED");
-            state.setWinner(PLAYER_NAMES[0]);
+            /* Change this once players are implemented */
+            state.setWinner(PLAYER_NAMES[state.getCurrentPlayer()]);
             return state;
         }
 
@@ -123,7 +144,8 @@ public class GameService {
 
             // Try to play: match rank or suit first
             Card cardToPlay = null;
-            Card topCard = getTopCard(state);
+            List<Card> discard = state.getDiscardPile();
+            Card topCard = discard.get(discard.size() - 1);
 
             for (Card c : hand) {
                 if (c.getRank().equals(topCard.getRank()) || c.getSuit().equals(state.getCurrentSuit())) {
@@ -143,15 +165,26 @@ public class GameService {
             }
 
             if (cardToPlay != null) {
+                // CPU picks most common suit
+                String chosenSuit = pickBestSuit(hand);
                 hand.remove(cardToPlay);
                 state.getDiscardPile().add(cardToPlay);
                 state.setCurrentSuit(cardToPlay.getSuit());
-
-                // CPU picks most common suit in hand when playing an 8
-                String chosenSuit = cardToPlay.getRank().equals("8") ? pickBestSuit(hand) : null;
-                applySpecialCard(cardToPlay, state, chosenSuit);
+                
+                applyEffect(cardToPlay, state, chosenSuit);
                 state.getTurnLog().add(new TurnLogEntry(name + " played " + cardToPlay + ".", cardToPlay));
             } else {
+                // Penalty draw
+                if (state.getPenaltyDraw() > 0) {
+                    for (int i = 0; i < state.getPenaltyDraw(); i++) {
+                        Card drawn = state.getDeck().remove(0);
+                        state.getHands().get(0).add(drawn);
+                    }
+                    advancePlayer(state);
+                    continue;
+                }
+
+                // Draw card voluntarily
                 if (!state.getDeck().isEmpty()) {
                     hand.add(state.getDeck().remove(0));
                     state.getTurnLog().add(new TurnLogEntry(name + " drew a card.", null));
@@ -172,37 +205,20 @@ public class GameService {
     }
 
     // Helpers
-    private boolean isValidPlay(Card card, Card topCard, String currentSuit) {
-        return card.getRank().equals("8")
-                || card.getRank().equals(topCard.getRank())
-                || card.getSuit().equals(currentSuit);
+    private boolean isValidPlay(GameState state, Card card) {
+        return ruleset.handleValidPlay(state, card);
     }
 
-    private void applySpecialCard(Card card, GameState state, String chosenSuit) {
-        switch (card.getRank()) {
-            case "8":
-                if (chosenSuit != null) state.setCurrentSuit(chosenSuit);
-                break;
-            case "Queen":
-                state.setSkipNext(true);
-                break;
-            case "Ace":
-                state.setDirection(state.getDirection() * -1);
-                break;
-            case "2":
-                state.setPenaltyDraw(state.getPenaltyDraw() + 2);
-                break;
-        }
+    private void applyEffect(Card card, GameState state, String chosenSuit) {
+        ruleset.handleApplyEffect(state, card, chosenSuit);
     }
 
+    private List<Card> createDeck() {
+        return ruleset.handleCreateDeck();
+    }
     private void advancePlayer(GameState state) {
         int next = (state.getCurrentPlayer() + state.getDirection() + 4) % 4;
         state.setCurrentPlayer(next);
-    }
-
-    private Card getTopCard(GameState state) {
-        List<Card> pile = state.getDiscardPile();
-        return pile.get(pile.size() - 1);
     }
 
     // CPU picks whichever suit appears most in its hand when playing an 8
@@ -213,6 +229,6 @@ public class GameService {
         return suitCount.entrySet().stream()
                 .max(Map.Entry.comparingByValue())
                 .map(Map.Entry::getKey)
-                .orElse("Hearts");
+                .orElse(hand.get(0).getSuit());
     }
 }

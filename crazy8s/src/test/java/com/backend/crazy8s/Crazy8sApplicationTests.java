@@ -1,9 +1,12 @@
 package com.backend.crazy8s;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.BeforeEach;
-import static org.junit.jupiter.api.Assertions.*;
 import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 class Crazy8sApplicationTests {
 
@@ -12,7 +15,8 @@ class Crazy8sApplicationTests {
 
     @BeforeEach
     void setup() {
-        gameService = new GameService();
+        Ruleset ruleset = new Crazy8sRuleset();
+        gameService = new GameService(ruleset);
         state = gameService.createGame();
     }
 
