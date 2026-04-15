@@ -1,34 +1,27 @@
-const SUITS = ["Hearts", "Diamonds", "Spades", "Clubs"]
-const RANKS = ["Ace", "2", "3", "4", "5", "6", "7", "8", "9", "Jack", "Queen", "King"]
+const BASE_URL = "http://localhost:8080/api";
 
-export async function newGame() {
-    return fetch("http://localhost:8080/api/game/new", {
-        method: "POST"
-    }).then(res => res.json());
-}
+export const SUITS = ["Hearts", "Diamonds", "Spades", "Clubs"];
+export const RANKS = ["Ace", "2", "3", "4", "5", "6", "7", "8", "9", "10", "Jack", "Queen", "King"];
 
-export async function playCard(gameState, cardIndex, chosenSuit = null) {
-    return fetch(`http://localhost:8080/api/game/${gameState.gameId}/play`, {
+// Lobby Management
+export async function createRoom(displayName) {
+    return fetch(`${BASE_URL}/lobby/create`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ cardIndex, chosenSuit })
+        body: JSON.stringify({ displayName })
     }).then(res => res.json());
-    
-    // return gameState;
 }
 
-export async function drawCard(gameState) {
-    return fetch(`http://localhost:8080/api/game/${gameState.gameId}/draw`, {
+export async function joinRoom(roomCode, displayName) {
+    return fetch(`${BASE_URL}/lobby/join`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ roomCode, displayName })
+    }).then(res => res.json());
+}
+
+export async function startGame(roomCode) {
+    return fetch(`${BASE_URL}/lobby/${roomCode}/start`, {
         method: "POST"
     }).then(res => res.json());
-
-    // const newState = { ...gameState };
-    // if (newState.deck.length > 0) {
-    //     const drawn = newState.deck[0];
-    //     newState.deck = newState.deck.slice(1);
-    //     newState.hands = newState.hands.map((h, i) =>
-    //         i === 0 ? [...h, drawn] : h
-    //     );
-    // }
-    // return newState;
 }

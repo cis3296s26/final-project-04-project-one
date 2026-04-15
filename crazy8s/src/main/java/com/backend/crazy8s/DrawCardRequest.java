@@ -1,10 +1,10 @@
 package com.backend.crazy8s;
 
 public class DrawCardRequest {
-    private String playerId;
+    private int playerIndex;
 
     public DrawCardRequest() {}
 
-    public String getPlayerId() { return playerId; }
-    public void setPlayerId(String playerId) { this.playerId = playerId; }
+    public int getPlayerIndex() { return playerIndex; }
+    public void setPlayerIndex(int playerIndex) { this.playerIndex = playerIndex; }
 }

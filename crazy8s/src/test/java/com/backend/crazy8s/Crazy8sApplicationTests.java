@@ -13,7 +13,13 @@ class Crazy8sApplicationTests {
     @BeforeEach
     void setup() {
         gameService = new GameService();
-        state = gameService.createGame();
+        Room mockRoom = new Room("test-room");
+        mockRoom.addPlayer("P1");
+        mockRoom.addPlayer("P2");
+        mockRoom.addPlayer("P3");
+        mockRoom.addPlayer("P4");
+        state = gameService.createGame(mockRoom);
+        gameService.saveGame(state);
     }
 
     // ─── createGame ──────────────────────────────────────────────────────────────
@@ -54,10 +60,11 @@ class Crazy8sApplicationTests {
         int before = state.getHands().get(0).size();
         // Force it to be user's turn
         state.setCurrentPlayer(0);
-        // Temporarily block CPU from running by making deck have 1 card
-        // and ensuring it's user's turn after draw
-        gameService.drawCard(state);
-        // User hand grows by 1 before CPU turns run
+        
+        gameService.drawCard(state.getGameId(), 0);
+        
+        // User hand grows by 1
+        assertEquals(before + 1, state.getHands().get(0).size());
         // We just check deck shrank
         assertTrue(state.getDeck().size() < 23);
     }

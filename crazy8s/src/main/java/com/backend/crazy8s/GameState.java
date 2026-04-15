@@ -13,6 +13,7 @@ public class GameState {
     private int direction;
     private boolean skipNext;
     private int penaltyDraw;
+    private List<String> playerNames;
     private String status;
     private String winner;
 
@@ -23,6 +24,7 @@ public class GameState {
         this.deck = new ArrayList<>();
         this.hands = new ArrayList<>();
         this.discardPile = new ArrayList<>();
+        this.playerNames = new ArrayList<>();
         this.direction = 1;
         this.currentPlayer = 0;
         this.skipNext = false;
@@ -40,6 +42,7 @@ public class GameState {
     public int getDirection() { return direction; }
     public boolean isSkipNext() { return skipNext; }
     public int getPenaltyDraw() { return penaltyDraw; }
+    public List<String> getPlayerNames() { return playerNames; }
     public String getStatus() { return status; }
     public String getWinner() { return winner; }
 
@@ -53,6 +56,7 @@ public class GameState {
     public void setDirection(int direction) { this.direction = direction; }
     public void setSkipNext(boolean skipNext) { this.skipNext = skipNext; }
     public void setPenaltyDraw(int penaltyDraw) { this.penaltyDraw = penaltyDraw; }
+    public void setPlayerNames(List<String> playerNames) { this.playerNames = playerNames; }
     public void setStatus(String status) { this.status = status; }
     public void setWinner(String winner) { this.winner = winner; }
 }

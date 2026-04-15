@@ -40,12 +40,20 @@ public class LobbyService {
         return room;
     }
 
-    // Starts the game for a room. Minimum 2 human players.
+    // Starts the game for a room.
     // Creates a GameState from the room's player configuration and saves it.
     public GameState startGame(String roomCode) {
         Room room = rooms.get(roomCode);
         if (room == null) throw new RuntimeException("Room not found.");
-        if (room.humanCount() < 2) throw new RuntimeException("Need at least 2 players to start.");
+        
+        // Fill remaining slots with CPU bots
+        for (int i = 0; i < 4; i++) {
+            if (room.getPlayerNames()[i] == null) {
+                room.getPlayerNames()[i] = "CPU";
+                room.getPlayerIds()[i] = "CPU-" + java.util.UUID.randomUUID().toString();
+            }
+        }
+
         room.setStatus("IN_PROGRESS");
         GameState state = gameService.createGame(room);
         room.setGameId(state.getGameId());
