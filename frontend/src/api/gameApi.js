@@ -1,7 +1,7 @@
 const SUITS = ["Hearts", "Diamonds", "Spades", "Clubs"];
 const RANKS = ["Ace", "2", "3", "4", "5", "6", "7", "8", "9", "Jack", "Queen", "King"];
 
-const API_BASE = "https://final-project-04-project-one.onrender.com";
+const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
 
 export async function newGame() {
     const response = await fetch(`${API_BASE}/api/game/new`, {
