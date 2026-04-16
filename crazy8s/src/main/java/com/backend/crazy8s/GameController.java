@@ -7,7 +7,10 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/game")
-@CrossOrigin(origins = "http://localhost:5173")
+@CrossOrigin(origins = {
+    "http://localhost:5173",
+    "https://final-project-04-project-one.onrender.com"
+})
 public class GameController {
 
     private final GameService gameService;
