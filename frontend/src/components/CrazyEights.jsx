@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { startGame } from "../api/gameApi";
 import { getCardImage, getCardBack } from "../utils/cardImages";
 import { Client } from "@stomp/stompjs";
 import SockJS from "sockjs-client";
@@ -9,102 +8,50 @@ export default function CrazyEights() {
   const location = useLocation();
   const navigate = useNavigate();
 
-  // If coming from ModeSelect, playerInfo and optionally gameId are in route state.
-  // If navigated directly (e.g. old bookmark), both will be null and we show an error.
-  const routePlayerInfo = location.state?.playerInfo || null;
-  const routeGameId = location.state?.gameId || null; // only set for vs. Bots
-  const waitingInLobby = location.state?.waitingInLobby || false; // true for Private / Join
+  // Both always set by ModeSelect (vs. Bots) or WaitingRoom (Private/Join)
+  const playerInfo = location.state?.playerInfo || null;
+  const gameId = location.state?.gameId || null;
 
   const [gameState, setGameState] = useState(null);
-  const [room, setRoom] = useState(null);
-  const [playerInfo] = useState(routePlayerInfo); // never changes after mount
   const [message, setMessage] = useState("");
-  const [connected, setConnected] = useState(false); // WebSocket ready?
 
   const stompClient = useRef(null);
-  const gameIdRef = useRef(routeGameId); // store gameId for use inside callbacks
-
-  // ─── WebSocket setup ────────────────────────────────────────────────────────
 
   useEffect(() => {
-    if (!playerInfo) return; // no playerInfo = came here directly, do nothing
+    if (!playerInfo || !gameId) return;
 
+    // Fetch the current game state immediately via REST.
+    // Needed because the WS broadcast from startGame() fired before we subscribed.
+    fetch(`http://localhost:8080/api/game/${gameId}`)
+      .then((res) => res.json())
+      .then((state) => setGameState(state))
+      .catch(() => setMessage("Failed to load game state."));
+
+    // Connect to WebSocket and subscribe to live game updates
     const socket = new SockJS("http://localhost:8080/ws");
     const client = new Client({
       webSocketFactory: () => socket,
       onConnect: () => {
-        setConnected(true);
-
-        if (waitingInLobby) {
-          // Private / Join: subscribe to lobby topic to wait for the host to start
-          client.subscribe(`/topic/lobby/${playerInfo.roomCode}`, (msg) => {
-            const data = JSON.parse(msg.body);
-            if (data.gameId) {
-              // Host pressed Start — switch to game subscription
-              gameIdRef.current = data.gameId;
-              subscribeToGame(client, data.gameId);
-            } else {
-              // Another player joined — update the room player list
-              setRoom(data);
-            }
-          });
-        } else if (routeGameId) {
-          // vs. Bots: game already started, subscribe directly to game topic
-          subscribeToGame(client, routeGameId);
-          // Also fetch the initial state via REST since the WS broadcast
-          // from startGame() fired before we were connected
-          fetchInitialGameState(routeGameId);
-        }
+        client.subscribe(`/topic/game/${gameId}`, (msg) => {
+          const newState = JSON.parse(msg.body);
+          setGameState(newState);
+          if (newState.status === "FINISHED") {
+            setMessage(`🏆 ${newState.winner} wins!`);
+          }
+        });
       },
-      onDisconnect: () => setConnected(false),
     });
 
     client.activate();
     stompClient.current = client;
 
     return () => client.deactivate();
-  }, []); // runs once on mount
-
-  const subscribeToGame = (client, gameId) => {
-    client.subscribe(`/topic/game/${gameId}`, (msg) => {
-      const newState = JSON.parse(msg.body);
-      setGameState(newState);
-      if (newState.status === "FINISHED") {
-        setMessage(`🏆 ${newState.winner} wins!`);
-      }
-    });
-  };
-
-  // For vs. Bots: the WS broadcast from startGame() fires before we subscribe,
-  // so we do a one-time REST GET to load the current state immediately.
-  const fetchInitialGameState = async (gameId) => {
-    try {
-      const res = await fetch(`http://localhost:8080/api/game/${gameId}`);
-      const state = await res.json();
-      setGameState(state);
-    } catch (e) {
-      setMessage("Failed to load game state.");
-    }
-  };
-
-  // ─── Lobby actions ───────────────────────────────────────────────────────────
-
-  // Only the room creator (playerIndex === 0) can start the game
-  const handleStartGame = async () => {
-    try {
-      await startGame(playerInfo.roomCode); // POST /api/lobby/{roomCode}/start
-      // The WS broadcast will fire and subscribeToGame() handles the rest
-    } catch (e) {
-      setMessage("Failed to start game.");
-    }
-  };
-
-  // ─── Game actions ────────────────────────────────────────────────────────────
+  }, []);
 
   const handleCardPlay = (cardIndex) => {
     if (!stompClient.current?.connected) return;
     stompClient.current.publish({
-      destination: `/app/game/${gameIdRef.current}/play`,
+      destination: `/app/game/${gameId}/play`,
       body: JSON.stringify({
         playerIndex: playerInfo.playerIndex,
         cardIndex,
@@ -116,16 +63,15 @@ export default function CrazyEights() {
   const handleDraw = () => {
     if (!stompClient.current?.connected) return;
     stompClient.current.publish({
-      destination: `/app/game/${gameIdRef.current}/draw`,
+      destination: `/app/game/${gameId}/draw`,
       body: JSON.stringify({
         playerIndex: playerInfo.playerIndex,
       }),
     });
   };
 
-  // ─── Guard: navigated here without going through ModeSelect ─────────────────
-
-  if (!playerInfo) {
+  // Guard: navigated here without going through ModeSelect or WaitingRoom
+  if (!playerInfo || !gameId) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen text-white gap-4">
         <p className="text-xl">No game session found.</p>
@@ -139,65 +85,7 @@ export default function CrazyEights() {
     );
   }
 
-  // ─── Lobby waiting view (Private / Join) ─────────────────────────────────────
-
-  if (waitingInLobby && !gameState) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-screen text-white gap-6">
-        <h1 className="text-4xl font-bold">Crazy Eights</h1>
-        <div className="bg-gray-800 p-8 rounded-xl flex flex-col gap-4 w-96 text-center">
-          <h2 className="text-2xl font-bold">Room Code</h2>
-          <p className="text-5xl font-black tracking-widest text-yellow-400">
-            {playerInfo.roomCode}
-          </p>
-          <p className="text-gray-400 text-sm">Share this code with friends</p>
-
-          <div className="flex flex-col gap-2 my-2">
-            {/* Show slots — populated once someone joins and room state arrives */}
-            {room ? (
-              room.playerNames.map((name, i) => (
-                <div
-                  key={i}
-                  className={`p-2 rounded font-semibold ${
-                    name === "CPU"
-                      ? "bg-gray-900 text-gray-600"
-                      : "bg-gray-700 text-white"
-                  }`}
-                >
-                  {name} {i === playerInfo.playerIndex ? "(You)" : ""}
-                </div>
-              ))
-            ) : (
-              // Before first WS message, show a placeholder for our own slot
-              <div className="p-2 rounded bg-gray-700 text-white font-semibold">
-                Waiting for players...
-              </div>
-            )}
-          </div>
-
-          {/* Only the creator (slot 0) can start */}
-          {playerInfo.playerIndex === 0 && (
-            <button
-              onClick={handleStartGame}
-              className="bg-orange-600 p-2 rounded font-bold hover:bg-orange-500 transition-colors"
-            >
-              Start Game
-            </button>
-          )}
-
-          {!connected && (
-            <p className="text-gray-400 text-sm animate-pulse">
-              Connecting to server...
-            </p>
-          )}
-          {message && <p className="text-red-400">{message}</p>}
-        </div>
-      </div>
-    );
-  }
-
-  // ─── Loading state: vs. Bots, WebSocket connected but REST fetch not back yet ─
-
+  // Loading: REST fetch not back yet
   if (!gameState) {
     return (
       <div className="flex items-center justify-center min-h-screen text-white text-2xl">
@@ -354,8 +242,7 @@ export default function CrazyEights() {
           ))}
         </div>
         <p className="text-white font-black mt-4 text-xl tracking-widest">
-          {gameState.playerNames[myIdx]} (YOU)
-          {isMyTurn ? " — Your Turn!" : ""}
+          {gameState.playerNames[myIdx]} (YOU){isMyTurn ? " — Your Turn!" : ""}
         </p>
       </section>
     </div>
