@@ -18,19 +18,14 @@ export default function ModeSelect() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(""); // 'bots' | 'private' | 'join' | ''
 
-  // vs. Bots: create a room, immediately start it (CPUs fill remaining slots), go straight to game
+  // vs. Bots: create room, immediately start (CPUs fill remaining slots), go straight to game
   const handleVsBots = async () => {
     setError("");
     setLoading("bots");
     try {
       const playerInfo = await createRoom(displayName); // { roomCode, playerId, playerIndex: 0 }
-      const { gameId } = await startGame(playerInfo.roomCode); // fills slots 1-3 with CPU, returns { gameId }
-      navigate("/crazy-eights", {
-        state: {
-          playerInfo, // { roomCode, playerId, playerIndex }
-          gameId, // skip the lobby wait, connect directly to game
-        },
-      });
+      const { gameId } = await startGame(playerInfo.roomCode); // fills slots 1-3 with CPU
+      navigate("/crazy-eights", { state: { playerInfo, gameId } });
     } catch (e) {
       setError("Failed to start game. Is the server running?");
     } finally {
@@ -38,18 +33,13 @@ export default function ModeSelect() {
     }
   };
 
-  // Private: create a room, go to CrazyEights in lobby-waiting mode so host can share the code
+  // Private: create room, go to waiting room so host can share the code
   const handleCreatePrivate = async () => {
     setError("");
     setLoading("private");
     try {
-      const playerInfo = await createRoom(displayName); // { roomCode, playerId, playerIndex: 0 }
-      navigate("/crazy-eights", {
-        state: {
-          playerInfo,
-          waitingInLobby: true, // CrazyEights will show the lobby room UI, not the game
-        },
-      });
+      const playerInfo = await createRoom(displayName);
+      navigate("/waiting-room", { state: { playerInfo } });
     } catch (e) {
       setError("Failed to create room. Is the server running?");
     } finally {
@@ -57,7 +47,7 @@ export default function ModeSelect() {
     }
   };
 
-  // Join: join an existing room by code, go to CrazyEights in lobby-waiting mode
+  // Join: join existing room by code, go to waiting room
   const handleJoin = async () => {
     if (!roomCodeInput.trim()) {
       setError("Enter a room code.");
@@ -69,13 +59,8 @@ export default function ModeSelect() {
       const playerInfo = await joinRoom(
         roomCodeInput.trim().toUpperCase(),
         displayName,
-      ); // { roomCode, playerId, playerIndex }
-      navigate("/crazy-eights", {
-        state: {
-          playerInfo,
-          waitingInLobby: true,
-        },
-      });
+      );
+      navigate("/waiting-room", { state: { playerInfo } });
     } catch (e) {
       setError("Room not found or already full.");
     } finally {
@@ -94,7 +79,7 @@ export default function ModeSelect() {
           />
         </button>
 
-        {/* Display name input — shared across all modes */}
+        {/* Display name — shared across all modes */}
         <div className="flex justify-center mb-4">
           <input
             type="text"
@@ -105,12 +90,10 @@ export default function ModeSelect() {
           />
         </div>
 
-        {/* Error message */}
         {error && <p className="text-red-500 text-center mb-2">{error}</p>}
 
-        {/* Mode buttons */}
         <section className="grid grid-rows-4 justify-center gap-2">
-          {/* vs. Bots — creates room + immediately starts with CPUs */}
+          {/* vs. Bots */}
           <button
             onClick={handleVsBots}
             disabled={!!loading}
@@ -119,7 +102,7 @@ export default function ModeSelect() {
             {loading === "bots" ? "Starting..." : "vs. Bots"}
           </button>
 
-          {/* Public — not yet supported by backend */}
+          {/* Public — not yet supported */}
           <button
             disabled
             className="bg-white w-72 h-20 rounded-2xl opacity-40 cursor-not-allowed font-semibold text-lg"
@@ -128,7 +111,7 @@ export default function ModeSelect() {
             Public (Coming Soon)
           </button>
 
-          {/* Private — creates a room, host waits in lobby and shares code */}
+          {/* Private Room */}
           <button
             onClick={handleCreatePrivate}
             disabled={!!loading}
@@ -158,7 +141,7 @@ export default function ModeSelect() {
         </section>
       </section>
 
-      {/* Settings bar — cosmetic for now, values not wired to backend */}
+      {/* Settings bar — cosmetic, not yet wired to backend */}
       <section className="grid grid-cols-4 mt-auto p-5 bg-gray-300">
         <div className="flex flex-row items-center gap-5">
           <img src={people} className="w-16 h-16" />
