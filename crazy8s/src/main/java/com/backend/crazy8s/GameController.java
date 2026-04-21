@@ -6,7 +6,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/game")
-@CrossOrigin(origins = "*")
+@CrossOrigin(originPatterns = "*")
 public class GameController {
 
     private final GameService gameService;

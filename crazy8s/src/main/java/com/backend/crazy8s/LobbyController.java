@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/lobby")
-@CrossOrigin(origins = "*")
+@CrossOrigin(originPatterns = "*")
 public class LobbyController {
 
     private final LobbyService lobbyService;
