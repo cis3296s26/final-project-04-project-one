@@ -1,27 +1,45 @@
-const BASE_URL = "http://localhost:8080/api";
+const SUITS = ["Hearts", "Diamonds", "Spades", "Clubs"];
+const RANKS = ["Ace", "2", "3", "4", "5", "6", "7", "8", "9", "Jack", "Queen", "King"];
 
-export const SUITS = ["Hearts", "Diamonds", "Spades", "Clubs"];
-export const RANKS = ["Ace", "2", "3", "4", "5", "6", "7", "8", "9", "10", "Jack", "Queen", "King"];
+const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
 
-// Lobby Management
-export async function createRoom(displayName) {
-    return fetch(`${BASE_URL}/lobby/create`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ displayName })
-    }).then(res => res.json());
-}
-
-export async function joinRoom(roomCode, displayName) {
-    return fetch(`${BASE_URL}/lobby/join`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ roomCode, displayName })
-    }).then(res => res.json());
-}
-
-export async function startGame(roomCode) {
-    return fetch(`${BASE_URL}/lobby/${roomCode}/start`, {
+export async function newGame() {
+    const response = await fetch(`${API_BASE}/api/game/new`, {
         method: "POST"
-    }).then(res => res.json());
+    });
+
+    if (!response.ok) {
+        throw new Error("Failed to create new game.");
+    }
+
+    return response.json();
+}
+
+export async function playCard(gameState, cardIndex, chosenSuit = null) {
+    const response = await fetch(`${API_BASE}/api/game/${gameState.gameId}/play`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ cardIndex, chosenSuit })
+    });
+
+    if (!response.ok) {
+        const errorMsg = await response.text();
+        throw new Error(errorMsg || "Invalid move.");
+    }
+
+    return response.json();
+}
+
+export async function drawCard(gameState) {
+    const response = await fetch(`${API_BASE}/api/game/${gameState.gameId}/draw`, {
+        method: "POST"
+    });
+
+    if (!response.ok) {
+        throw new Error("Failed to draw card.");
+    }
+
+    return response.json();
 }

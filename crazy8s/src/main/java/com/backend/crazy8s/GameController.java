@@ -1,12 +1,16 @@
 package com.backend.crazy8s;
 
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.util.HashMap;
 import java.util.Map;
 
 @RestController
 @RequestMapping("/api/game")
-@CrossOrigin(origins = "*")
+@CrossOrigin(origins = {
+    "http://localhost:5173",
+    "https://final-project-04-project-one.onrender.com"
+})
 public class GameController {
 
     private final GameService gameService;
@@ -30,7 +34,16 @@ public class GameController {
     }
 
     @PostMapping("/{gameId}/play")
-    public GameState playCard(@PathVariable String gameId, @RequestBody PlayCardRequest request) {
-        return gameService.playCard(gameId, request.getPlayerIndex(), request.getCardIndex(), request.getChosenSuit());
+    public ResponseEntity<?> playCard(@PathVariable String gameId, @RequestBody PlayCardRequest request) {
+        GameState state = games.get(gameId);
+        if (state == null) {
+            return ResponseEntity.status(404).body("Game not found");
+        }
+        try {
+            GameState updated = gameService.playCard(state, request.getCardIndex(), request.getChosenSuit());
+            return ResponseEntity.ok(updated);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 }
