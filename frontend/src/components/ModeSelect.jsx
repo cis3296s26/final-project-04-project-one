@@ -10,7 +10,7 @@ import cardHand from '../assets/card-hand.svg';
 import timer from '../assets/timer.svg';
 import arrow from '../assets/arrow.svg';
 
-const BACKEND_WS_URL = 'http://localhost:8080';
+const BACKEND_WS_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
 
 export default function ModeSelect() {
   const navigate = useNavigate();
