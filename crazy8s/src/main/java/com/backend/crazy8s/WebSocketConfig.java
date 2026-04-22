@@ -18,9 +18,9 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
         config.setApplicationDestinationPrefixes("/app");
     }
 
-    @Override 
-    // WebSocket connection endpoint, only accepts connections from the frontend
+    @Override
+    // WebSocket connection endpoint, accepts connections from any origin
     public void registerStompEndpoints(StompEndpointRegistry registry) {
-        registry.addEndpoint("/ws").setAllowedOrigins("*").withSockJS();
+        registry.addEndpoint("/ws").setAllowedOriginPatterns("*").withSockJS();
     }
 }

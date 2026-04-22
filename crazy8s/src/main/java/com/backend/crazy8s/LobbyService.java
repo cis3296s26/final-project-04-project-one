@@ -45,10 +45,12 @@ public class LobbyService {
     public GameState startGame(String roomCode) {
         Room room = rooms.get(roomCode);
         if (room == null) throw new RuntimeException("Room not found.");
-        
+
         // Fill remaining slots with CPU bots
+        // BUG FIX: check playerIds (not playerNames) for null -- playerNames is
+        // initialized to "CPU" in the Room constructor so it's never null.
         for (int i = 0; i < 4; i++) {
-            if (room.getPlayerNames()[i] == null) {
+            if (room.getPlayerIds()[i] == null) {
                 room.getPlayerNames()[i] = "CPU";
                 room.getPlayerIds()[i] = "CPU-" + java.util.UUID.randomUUID().toString();
             }
