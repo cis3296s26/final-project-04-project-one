@@ -1,12 +1,16 @@
 package com.backend.crazy8s;
 
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.util.HashMap;
 import java.util.Map;
 
 @RestController
 @RequestMapping("/api/game")
-@CrossOrigin(origins = "*")
+@CrossOrigin(origins = {
+    "http://localhost:5173",
+    "https://final-project-04-project-one.onrender.com"
+})
 public class GameController {
 
     private final GameService gameService;

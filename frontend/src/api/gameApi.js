@@ -1,7 +1,7 @@
-const BASE_URL = "http://localhost:8080/api";
-
 export const SUITS = ["Hearts", "Diamonds", "Spades", "Clubs"];
 export const RANKS = ["Ace", "2", "3", "4", "5", "6", "7", "8", "9", "10", "Jack", "Queen", "King"];
+
+const BASE_URL = (import.meta.env.VITE_API_BASE_URL || "http://localhost:8080") + "/api";
 
 // Lobby Management
 export async function createRoom(displayName) {
