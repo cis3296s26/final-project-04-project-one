@@ -14,22 +14,14 @@ import java.util.Map;
 public class GameController {
 
     private final GameService gameService;
-    private final Map<String, GameState> games = new HashMap<>();
 
     public GameController(GameService gameService) {
         this.gameService = gameService;
     }
 
-    @PostMapping("/new")
-    public GameState newGame() {
-        GameState state = gameService.createGame();
-        games.put(state.getGameId(), state);
-        return state;
-    }
-
     @GetMapping("/{gameId}")
     public GameState getGame(@PathVariable String gameId) {
-        GameState state = games.get(gameId);
+        GameState state = gameService.getGame(gameId);
         if (state == null) {
             throw new RuntimeException("Game not found");
         }
@@ -37,25 +29,12 @@ public class GameController {
     }
 
     @PostMapping("/{gameId}/draw")
-    public GameState drawCard(@PathVariable String gameId) {
-        GameState state = games.get(gameId);
-        if (state == null) {
-            throw new RuntimeException("Game not found");
-        }
-        return gameService.drawCard(state);
+    public GameState drawCard(@PathVariable String gameId, @RequestBody DrawCardRequest request) {
+        return gameService.drawCard(gameId, request.getPlayerIndex());
     }
 
     @PostMapping("/{gameId}/play")
-    public ResponseEntity<?> playCard(@PathVariable String gameId, @RequestBody PlayCardRequest request) {
-        GameState state = games.get(gameId);
-        if (state == null) {
-            return ResponseEntity.status(404).body("Game not found");
-        }
-        try {
-            GameState updated = gameService.playCard(state, request.getCardIndex(), request.getChosenSuit());
-            return ResponseEntity.ok(updated);
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
+    public GameState playCard(@PathVariable String gameId, @RequestBody PlayCardRequest request) {
+        return gameService.playCard(gameId, request.getPlayerIndex(), request.getCardIndex(), request.getChosenSuit());
     }
 }

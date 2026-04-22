@@ -1,45 +1,39 @@
-const SUITS = ["Hearts", "Diamonds", "Spades", "Clubs"];
-const RANKS = ["Ace", "2", "3", "4", "5", "6", "7", "8", "9", "Jack", "Queen", "King"];
+export const SUITS = ["Hearts", "Diamonds", "Spades", "Clubs"];
+export const RANKS = ["Ace", "2", "3", "4", "5", "6", "7", "8", "9", "10", "Jack", "Queen", "King"];
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
+const BASE_URL = (import.meta.env.VITE_API_BASE_URL || "http://localhost:8080") + "/api";
 
-export async function newGame() {
-    const response = await fetch(`${API_BASE}/api/game/new`, {
-        method: "POST"
-    });
-
-    if (!response.ok) {
-        throw new Error("Failed to create new game.");
-    }
-
-    return response.json();
+// Helper — throw on non-2xx so callers can catch HTTP errors normally
+async function checkOk(res) {
+  if (!res.ok) {
+    const body = await res.text().catch(() => `HTTP ${res.status}`);
+    throw new Error(body || `HTTP ${res.status}`);
+  }
+  return res.json();
 }
 
-export async function playCard(gameState, cardIndex, chosenSuit = null) {
-    const response = await fetch(`${API_BASE}/api/game/${gameState.gameId}/play`, {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ cardIndex, chosenSuit })
-    });
-
-    if (!response.ok) {
-        const errorMsg = await response.text();
-        throw new Error(errorMsg || "Invalid move.");
-    }
-
-    return response.json();
+// Lobby Management
+export async function createRoom(displayName) {
+  const res = await fetch(`${BASE_URL}/lobby/create`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ displayName })
+  });
+  return checkOk(res);
 }
 
-export async function drawCard(gameState) {
-    const response = await fetch(`${API_BASE}/api/game/${gameState.gameId}/draw`, {
-        method: "POST"
-    });
+export async function joinRoom(roomCode, displayName) {
+  const res = await fetch(`${BASE_URL}/lobby/join`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ roomCode, displayName })
+  });
+  return checkOk(res);
+}
 
-    if (!response.ok) {
-        throw new Error("Failed to draw card.");
-    }
-
-    return response.json();
+export async function startGame(roomCode) {
+  const res = await fetch(`${BASE_URL}/lobby/${roomCode}/start`, {
+    method: "POST"
+  });
+  return checkOk(res);
 }

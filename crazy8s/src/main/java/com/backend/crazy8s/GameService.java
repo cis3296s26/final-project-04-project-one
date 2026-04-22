@@ -2,18 +2,21 @@ package com.backend.crazy8s;
 
 import org.springframework.stereotype.Service;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 public class GameService {
 
     private static final String[] SUITS = {"Hearts", "Diamonds", "Clubs", "Spades"};
     private static final String[] RANKS = {"Ace", "2", "3", "4", "5", "6", "7", "8", "9", "10", "Jack", "Queen", "King"};
-    private static final String[] PLAYER_NAMES = {"User", "Player 2", "Player 3", "Player 4"};
+    
+    private final Map<String, GameState> games = new ConcurrentHashMap<>();
 
-    // Create Game
-    public GameState createGame() {
+    // Create Game from a Room
+    public GameState createGame(Room room) {
         String gameId = UUID.randomUUID().toString();
         GameState state = new GameState(gameId);
+        state.setPlayerNames(Arrays.asList(room.getPlayerNames()));
 
         // Build and shuffle deck
         List<Card> deck = new ArrayList<>();
@@ -21,7 +24,6 @@ public class GameService {
             for (String rank : RANKS)
                 deck.add(new Card(rank, suit));
         Collections.shuffle(deck);
-        state.setDeck(deck);
 
         // Deal 7 cards to each of 4 players
         List<List<Card>> hands = new ArrayList<>();
@@ -32,6 +34,7 @@ public class GameService {
             hands.add(hand);
         }
         state.setHands(hands);
+        state.setDeck(deck);
 
         // Set up discard pile
         List<Card> discardPile = new ArrayList<>();
@@ -43,60 +46,69 @@ public class GameService {
         return state;
     }
 
-    // Draw Card (User)
-    public GameState drawCard(GameState state) {
-        state.getTurnLog().clear();
+    public void saveGame(GameState state) {
+        games.put(state.getGameId(), state);
+    }
+
+    public GameState getGame(String gameId) {
+        return games.get(gameId);
+    }
+
+    // Draw Card
+    public GameState drawCard(String gameId, int playerIndex) {
+        GameState state = getGame(gameId);
+        if (state == null || state.getCurrentPlayer() != playerIndex) return state;
+
         if (!state.getDeck().isEmpty()) {
             Card drawn = state.getDeck().remove(0);
-            state.getHands().get(0).add(drawn);
+            state.getHands().get(playerIndex).add(drawn);
         }
 
-        // Advance to next player then run CPU turns
         advancePlayer(state);
         processCpuTurns(state);
         return state;
     }
 
-    // Play Card (User)
-    public GameState playCard(GameState state, int cardIndex, String chosenSuit) {
-        state.getTurnLog().clear();
-        List<Card> userHand = state.getHands().get(0);
+    // Play Card
+    public GameState playCard(String gameId, int playerIndex, int cardIndex, String chosenSuit) {
+        GameState state = getGame(gameId);
+        if (state == null || state.getCurrentPlayer() != playerIndex) return state;
+
+        List<Card> hand = state.getHands().get(playerIndex);
         Card topCard = getTopCard(state);
 
-        if (cardIndex < 0 || cardIndex >= userHand.size())
+        if (cardIndex < 0 || cardIndex >= hand.size())
             throw new IllegalArgumentException("Invalid card index.");
 
-        Card card = userHand.get(cardIndex);
+        Card card = hand.get(cardIndex);
 
         // Validate move
         if (!isValidPlay(card, topCard, state.getCurrentSuit()))
             throw new IllegalArgumentException("Invalid move.");
 
         // Play the card
-        userHand.remove(cardIndex);
+        hand.remove(cardIndex);
         state.getDiscardPile().add(card);
         state.setCurrentSuit(card.getSuit());
 
         // Handle special cards
         applySpecialCard(card, state, chosenSuit);
 
-        // Check if user won
-        if (userHand.isEmpty()) {
+        // Check if player won
+        if (hand.isEmpty()) {
             state.setStatus("FINISHED");
-            state.setWinner(PLAYER_NAMES[0]);
+            state.setWinner(state.getPlayerNames().get(playerIndex));
             return state;
         }
 
-        // Advance to next player then run CPU turns
         advancePlayer(state);
         processCpuTurns(state);
         return state;
     }
 
-    // CPU Turns
+    // CPU Turns (runs automatically for any slot that is "CPU")
     public void processCpuTurns(GameState state) {
-        // Keep running CPU turns until it's the user's turn or game is over
-        while (state.getCurrentPlayer() != 0 && state.getStatus().equals("IN_PROGRESS")) {
+        while (state.getStatus().equals("IN_PROGRESS") && isCpu(state, state.getCurrentPlayer())) {
             int current = state.getCurrentPlayer();
             List<Card> hand = state.getHands().get(current);
             String name = PLAYER_NAMES[current];
@@ -121,7 +133,7 @@ public class GameService {
                 continue;
             }
 
-            // Try to play: match rank or suit first
+            // Try to play
             Card cardToPlay = null;
             Card topCard = getTopCard(state);
 
@@ -132,7 +144,6 @@ public class GameService {
                 }
             }
 
-            // Try an 8 if nothing else
             if (cardToPlay == null) {
                 for (Card c : hand) {
                     if (c.getRank().equals("8")) {
@@ -146,10 +157,9 @@ public class GameService {
                 hand.remove(cardToPlay);
                 state.getDiscardPile().add(cardToPlay);
                 state.setCurrentSuit(cardToPlay.getSuit());
+                String suit = cardToPlay.getRank().equals("8") ? pickBestSuit(hand) : null;
+                applySpecialCard(cardToPlay, state, suit);
 
-                // CPU picks most common suit in hand when playing an 8
-                String chosenSuit = cardToPlay.getRank().equals("8") ? pickBestSuit(hand) : null;
-                applySpecialCard(cardToPlay, state, chosenSuit);
                 state.getTurnLog().add(new TurnLogEntry(name + " played " + cardToPlay + ".", cardToPlay));
             } else {
                 if (!state.getDeck().isEmpty()) {
@@ -166,12 +176,14 @@ public class GameService {
                 state.getTurnLog().add(new TurnLogEntry(name + " wins!", null));
                 return;
             }
-
             advancePlayer(state);
         }
     }
 
-    // Helpers
+    private boolean isCpu(GameState state, int index) {
+        return "CPU".equals(state.getPlayerNames().get(index));
+    }
+
     private boolean isValidPlay(Card card, Card topCard, String currentSuit) {
         return card.getRank().equals("8")
                 || card.getRank().equals(topCard.getRank())
@@ -205,7 +217,6 @@ public class GameService {
         return pile.get(pile.size() - 1);
     }
 
-    // CPU picks whichever suit appears most in its hand when playing an 8
     private String pickBestSuit(List<Card> hand) {
         Map<String, Integer> suitCount = new HashMap<>();
         for (Card c : hand)

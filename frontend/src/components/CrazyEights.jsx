@@ -1,404 +1,286 @@
-import { useState, useEffect, useRef } from "react";
-import { newGame, playCard, drawCard } from "../api/gameApi";
-import { getCardImage, getCardBack } from "../utils/cardImages";
+import { useState, useEffect, useRef } from 'react';
+import { useLocation } from 'react-router-dom';
+import { createRoom, joinRoom, startGame } from '../api/gameApi';
+import { getCardImage, getCardBack } from '../utils/cardImages';
+import { Client } from '@stomp/stompjs';
+import SockJS from 'sockjs-client';
+
+const BACKEND_WS_URL = 'http://localhost:8080';
+const BACKEND_API_URL = 'http://localhost:8080/api';
 
 export default function CrazyEights() {
+  const location = useLocation();
   const [gameState, setGameState] = useState(null);
-  const [message, setMessage] = useState("");
-  const [playedCardIndex, setPlayedCardIndex] = useState(null);
-  const [cardOffset, setCardOffset] = useState({ x: 0, y: 0 });
-  const [flyingCard, setFlyingCard] = useState(null);
+  const [room, setRoom] = useState(null);
+  const [playerInfo, setPlayerInfo] = useState(null);
+  const [message, setMessage] = useState('');
+  const [displayName, setDisplayName] = useState('Player ' + Math.floor(Math.random() * 1000));
+  const [roomCodeInput, setRoomCodeInput] = useState('');
+  const stompClient = useRef(null);
 
-  const discardRef = useRef(null);
-  const cardRefs = useRef([]);
-  const opponent1Ref = useRef(null);
-  const opponent2Ref = useRef(null);
-  const opponent3Ref = useRef(null);
-  const deckRef = useRef(null);
-
-  // Start game on mount
+  // If navigated from ModeSelect with multiplayer state, skip lobby and go straight to game
   useEffect(() => {
-    newGame().then(setGameState);
+    const state = location.state;
+    if (state?.multiplayer && state?.gameId) {
+      const info = {
+        playerId: state.playerId,
+        playerIndex: state.playerIndex,
+        roomCode: ''
+      };
+      setPlayerInfo(info);
+      connectToGameDirect(state.gameId);
+    }
+    return () => {
+      if (stompClient.current) stompClient.current.deactivate();
+    };
   }, []);
 
-  // helper
-  const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-
-  // animate flying from deck helper function
-  const animateFlyFromDeck = async (targetRef) => {
-    const deckEl = deckRef.current;
-    const targetEl = targetRef.current || targetRef; // support both ref and element
-    if (!deckEl || !targetEl) return;
-
-    const deckRect = deckEl.getBoundingClientRect();
-    const targetRect = targetEl.getBoundingClientRect();
-
-    setFlyingCard({
-      fromRect: {
-        left: deckRect.left,
-        top: deckRect.top,
-        width: deckRect.width,
-        height: deckRect.height,
-      },
-      offset: { x: 0, y: 0 },
-    });
-
-    await delay(50);
-
-    setFlyingCard((prev) => ({
-      ...prev,
-      offset: {
-        x:
-          targetRect.left -
-          deckRect.left +
-          (targetRect.width - deckRect.width) / 2,
-        y:
-          targetRect.top -
-          deckRect.top +
-          (targetRect.height - deckRect.height) / 2,
-      },
-    }));
-
-    await delay(450);
-    setFlyingCard(null);
-  };
-
-  const handleCardPlay = async (cardIndex) => {
-    const cardEl = cardRefs.current[cardIndex];
-    const discardEl = discardRef.current;
-
-    if (cardEl && discardEl) {
-      const cardRect = cardEl.getBoundingClientRect();
-      const discardRect = discardEl.getBoundingClientRect();
-      setCardOffset({
-        x:
-          discardRect.left -
-          cardRect.left +
-          (discardRect.width - cardRect.width) / 2,
-        y:
-          discardRect.top -
-          cardRect.top +
-          (discardRect.height - cardRect.height) / 2,
-      });
-    }
-
-    setPlayedCardIndex(cardIndex);
-
-    const playedCard = gameState.hands[0][cardIndex];
-    const previousGameState = gameState;
-    setGameState((prev) => ({
-      ...prev,
-      discardPile: [...prev.discardPile, playedCard],
-    }));
-
-    setTimeout(async () => {
-      try {
-        const updated = await playCard(gameState, cardIndex);
-        setPlayedCardIndex(null);
-        setCardOffset({ x: 0, y: 0 });
-
-        const log = updated.turnLog || [];
-
-        // Replay each CPU turn: update top card visually, then show message
-        for (let i = 0; i < log.length; i++) {
-          const entry = log[i];
-
-          if (entry.cardPlayed) {
-            // Figure out which opponent played (parse from message)
-            let opponentRef = opponent1Ref;
-            if (entry.message.startsWith("Player 3"))
-              opponentRef = opponent2Ref;
-            if (entry.message.startsWith("Player 4"))
-              opponentRef = opponent3Ref;
-
-            const fromEl = opponentRef.current;
-            const discardEl = discardRef.current;
-
-            if (fromEl && discardEl) {
-              const fromRect = fromEl.getBoundingClientRect();
-              const discardRect = discardEl.getBoundingClientRect();
-
-              // Start the card at the opponent's position
-              setFlyingCard({
-                fromRect: {
-                  left: fromRect.left + fromRect.width / 2 - 70,
-                  top: fromRect.top + fromRect.height / 2 - 98,
-                  width: 140,
-                  height: 196,
-                },
-                offset: { x: 0, y: 0 },
-              });
-
-              await delay(50); // let the element mount first
-
-              // Fly it to the discard pile
-              const discardCenter = {
-                x: discardRect.left + discardRect.width / 2,
-                y: discardRect.top + discardRect.height / 2,
-              };
-              setFlyingCard((prev) => ({
-                ...prev,
-                offset: {
-                  x: discardCenter.x - (fromRect.left + fromRect.width / 2),
-                  y: discardCenter.y - (fromRect.top + fromRect.height / 2),
-                },
-              }));
-
-              await delay(450); // wait for animation to finish
-
-              // Swap to the real card on the discard pile, remove flying card
-              setFlyingCard(null);
-              setGameState((prev) => ({
-                ...prev,
-                discardPile: [...prev.discardPile, entry.cardPlayed],
-                currentSuit: entry.cardPlayed.suit,
-              }));
-            }
-
-            await delay(600);
-          } else {
-            let opponentRef = opponent1Ref;
-            if (entry.message.startsWith("Player 3"))
-              opponentRef = opponent2Ref;
-            if (entry.message.startsWith("Player 4"))
-              opponentRef = opponent3Ref;
-
-            await animateFlyFromDeck(opponentRef);
-            await delay(300);
+  // Direct game connection — used when coming from ModeSelect lobby
+  const connectToGameDirect = (gameId) => {
+    const client = new Client({
+      webSocketFactory: () => new SockJS(`${BACKEND_WS_URL}/ws`),
+      reconnectDelay: 0,
+      onConnect: () => {
+        client.subscribe(`/topic/game/${gameId}`, (msg) => {
+          const newState = JSON.parse(msg.body);
+          setGameState(newState);
+          if (newState.status === 'FINISHED') {
+            setMessage(`${newState.winner} wins!`);
           }
-        }
-
-        await delay(400);
-        setGameState(updated);
-        setMessage("");
-
-        if (updated.status === "FINISHED")
-          setMessage(`${updated.winner} wins!`);
-      } catch (e) {
-        setPlayedCardIndex(null);
-        setCardOffset({ x: 0, y: 0 });
-        setGameState(previousGameState);
-        setMessage(e.message || "Invalid move.");
-      }
-    }, 400);
-  };
-
-  const handleDraw = async () => {
-    // Find the user hand section to fly the card toward
-    // We can just use the cardRefs area or approximate with a fixed bottom target
-    const deckEl = deckRef.current;
-    if (deckEl) {
-      const deckRect = deckEl.getBoundingClientRect();
-      setFlyingCard({
-        fromRect: {
-          left: deckRect.left,
-          top: deckRect.top,
-          width: deckRect.width,
-          height: deckRect.height,
-        },
-        offset: { x: 0, y: 0 },
-      });
-
-      await delay(50);
-
-      setFlyingCard((prev) => ({
-        ...prev,
-        offset: {
-          x: 0,
-          y: window.innerHeight - deckRect.top - deckRect.height - 20,
-        },
-      }));
-
-      await delay(450);
-      setFlyingCard(null);
-    }
-
-    const updated = await drawCard(gameState);
-    setGameState(updated);
-
-    // Now animate CPU turns that follow
-    const log = updated.turnLog || [];
-    for (let i = 0; i < log.length; i++) {
-      const entry = log[i];
-
-      // Resolve opponent ref for every entry, not just card plays
-      let opponentRef = opponent1Ref;
-      if (entry.message.startsWith("Player 3")) opponentRef = opponent2Ref;
-      if (entry.message.startsWith("Player 4")) opponentRef = opponent3Ref;
-
-      if (entry.cardPlayed) {
-        const fromEl = opponentRef.current;
-        const discardEl = discardRef.current;
-
-        if (fromEl && discardEl) {
-          const fromRect = fromEl.getBoundingClientRect();
-          const discardRect = discardEl.getBoundingClientRect();
-
-          setFlyingCard({
-            fromRect: {
-              left: fromRect.left + fromRect.width / 2 - 70,
-              top: fromRect.top + fromRect.height / 2 - 98,
-              width: 140,
-              height: 196,
-            },
-            offset: { x: 0, y: 0 },
-          });
-
-          await delay(50);
-
-          setFlyingCard((prev) => ({
-            ...prev,
-            offset: {
-              x:
-                discardRect.left +
-                discardRect.width / 2 -
-                (fromRect.left + fromRect.width / 2),
-              y:
-                discardRect.top +
-                discardRect.height / 2 -
-                (fromRect.top + fromRect.height / 2),
-            },
-          }));
-
-          await delay(450);
-          setFlyingCard(null);
-          setGameState((prev) => ({
-            ...prev,
-            discardPile: [...prev.discardPile, entry.cardPlayed],
-            currentSuit: entry.cardPlayed.suit,
-          }));
-        }
-
-        await delay(600);
-      } else {
-        await animateFlyFromDeck(opponentRef);
-        await delay(300);
-      }
-    }
-
-    setGameState(updated);
-  };
-
-  const handleNewGame = () => {
-    newGame().then((state) => {
-      setGameState(state);
-      setMessage("");
+        });
+        // Fetch initial game state — the backend already broadcast before we subscribed,
+        // and the STOMP simple broker does not buffer messages.
+        fetch(`${BACKEND_API_URL}/game/${gameId}`)
+          .then(res => res.json())
+          .then(state => setGameState(state))
+          .catch(err => console.error('Failed to fetch initial game state:', err));
+      },
     });
+    client.activate();
+    stompClient.current = client;
   };
 
-  if (!gameState)
-    return <div className="text-white text-center mt-10">Loading...</div>;
+  // Built-in lobby connection — used when CrazyEights is opened directly
+  const connectToLobby = (roomCode) => {
+    const client = new Client({
+      webSocketFactory: () => new SockJS(`${BACKEND_WS_URL}/ws`),
+      reconnectDelay: 0,
+      onConnect: () => {
+        client.subscribe(`/topic/lobby/${roomCode}`, (msg) => {
+          const data = JSON.parse(msg.body);
+          if (data.gameId) {
+            connectToGame(data.gameId, client);
+          } else {
+            setRoom(data);
+          }
+        });
+      },
+    });
+    client.activate();
+    stompClient.current = client;
+  };
 
-  const userHand = gameState.hands[0];
+  const connectToGame = (gameId, client) => {
+    const c = client || stompClient.current;
+    if (c) {
+      c.subscribe(`/topic/game/${gameId}`, (msg) => {
+        const newState = JSON.parse(msg.body);
+        setGameState(newState);
+        if (newState.status === 'FINISHED') {
+          setMessage(`${newState.winner} wins!`);
+        }
+      });
+      // Fetch initial game state — same race condition applies here
+      fetch(`${BACKEND_API_URL}/game/${gameId}`)
+        .then(res => res.json())
+        .then(state => setGameState(state))
+        .catch(err => console.error('Failed to fetch initial game state:', err));
+    }
+  };
+
+  const handleCreateRoom = async () => {
+    try {
+      const data = await createRoom(displayName);
+      setPlayerInfo(data);
+      connectToLobby(data.roomCode);
+    } catch (e) {
+      setMessage('Failed to create room.');
+    }
+  };
+
+  const handleJoinRoom = async () => {
+    try {
+      const data = await joinRoom(roomCodeInput, displayName);
+      setPlayerInfo(data);
+      connectToLobby(data.roomCode);
+    } catch (e) {
+      setMessage('Room not found or full.');
+    }
+  };
+
+  const handleStartGame = async () => {
+    try {
+      await startGame(playerInfo.roomCode);
+    } catch (e) {
+      setMessage('Need at least 2 players to start.');
+    }
+  };
+
+  const handleCardPlay = (cardIndex) => {
+    if (stompClient.current && stompClient.current.connected) {
+      stompClient.current.publish({
+        destination: `/app/game/${gameState.gameId}/play`,
+        body: JSON.stringify({
+          playerIndex: playerInfo.playerIndex,
+          cardIndex: cardIndex,
+          chosenSuit: null
+        })
+      });
+    }
+  };
+
+  const handleDraw = () => {
+    if (stompClient.current && stompClient.current.connected) {
+      stompClient.current.publish({
+        destination: `/app/game/${gameState.gameId}/draw`,
+        body: JSON.stringify({ playerIndex: playerInfo.playerIndex })
+      });
+    }
+  };
+
+  // Lobby View
+  if (!gameState) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen text-white gap-6">
+        <h1 className="text-4xl font-bold">Crazy Eights Lobby</h1>
+        {!playerInfo ? (
+          <div className="bg-gray-800 p-8 rounded-xl flex flex-col gap-4 w-96">
+            <input
+              type="text"
+              placeholder="Display Name"
+              value={displayName}
+              onChange={(e) => setDisplayName(e.target.value)}
+              className="p-2 rounded bg-gray-700 border border-gray-600 focus:outline-none focus:border-blue-500"
+            />
+            <button
+              onClick={handleCreateRoom}
+              className="bg-blue-600 p-2 rounded font-bold hover:bg-blue-500 transition-colors"
+            >
+              Create Private Room
+            </button>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                placeholder="Room Code"
+                value={roomCodeInput}
+                onChange={(e) => setRoomCodeInput(e.target.value.toUpperCase())}
+                className="p-2 rounded bg-gray-700 border border-gray-600 flex-grow"
+              />
+              <button
+                onClick={handleJoinRoom}
+                className="bg-green-600 p-2 rounded font-bold hover:bg-green-500"
+              >
+                Join
+              </button>
+            </div>
+            {message && <p className="text-red-400 text-center">{message}</p>}
+          </div>
+        ) : (
+          <div className="bg-gray-800 p-8 rounded-xl flex flex-col gap-4 w-96 text-center">
+            <h2 className="text-2xl font-bold">Room: {playerInfo.roomCode}</h2>
+            <div className="flex flex-col gap-2 my-4">
+              {room && room.playerNames.map((name, i) => (
+                <div key={i} className={`p-2 rounded ${name === 'CPU' ? 'bg-gray-900 text-gray-600' : 'bg-gray-700 text-white'}`}>
+                  {name} {i === playerInfo.playerIndex ? '(You)' : ''}
+                </div>
+              ))}
+            </div>
+            {playerInfo.playerIndex === 0 && (
+              <button onClick={handleStartGame} className="bg-orange-600 p-2 rounded font-bold hover:bg-orange-500">
+                Start Game
+              </button>
+            )}
+            {message && <p className="text-red-400">{message}</p>}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // Game View
+  const myIdx = playerInfo.playerIndex;
+  const userHand = gameState.hands[myIdx];
   const topCard = gameState.discardPile[gameState.discardPile.length - 1];
-  const opponent1Hand = gameState.hands[1]; // top
-  const opponent2Hand = gameState.hands[2]; // left
-  const opponent3Hand = gameState.hands[3]; // right
+  const others = [(myIdx + 1) % 4, (myIdx + 2) % 4, (myIdx + 3) % 4];
 
   return (
-    <div className="grid h-screen w-screen grid-rows-[auto_1fr_auto] grid-cols-[auto_1fr_auto]">
-      {flyingCard && (
-        <img
-          src={getCardBack()}
-          style={{
-            position: "fixed",
-            left: flyingCard.fromRect.left,
-            top: flyingCard.fromRect.top,
-            width: flyingCard.fromRect.width,
-            height: flyingCard.fromRect.height,
-            transform: `translate(${flyingCard.offset.x}px, ${flyingCard.offset.y}px)`,
-            transition: "transform 0.4s ease-in-out",
-            zIndex: 100,
-            pointerEvents: "none",
-          }}
-        />
-      )}
-      {/* top hand */}
-      <section
-        ref={opponent2Ref}
-        className="col-start-1 col-end-4 flex flex-row justify-center items-start pt-2 -space-x-16"
-      >
-        {opponent1Hand.map((_, i) => (
-          <img key={i} src={getCardBack()} className="w-35 h-50 rotate-180" />
-        ))}
-      </section>
-
-      {/* left hand */}
-      <section
-        ref={opponent1Ref}
-        className="row-start-2 flex flex-col justify-center items-center pl-2 -space-y-60"
-      >
-        {opponent2Hand.map((_, i) => (
-          <img key={i} src={getCardBack()} className="w-35 h-50 rotate-90" />
-        ))}
-      </section>
-
-      {/* middle cards */}
-      <section className="row-start-2 col-start-2 flex flex-col justify-center items-center gap-4">
-        {message && <p className="text-white text-lg font-bold">{message}</p>}
-        <p className="text-white text-sm">
-          Current Suit: {gameState.currentSuit}
-        </p>
-        <div className="flex flex-row justify-center items-center gap-6">
-          <button
-            ref={deckRef}
-            onClick={handleDraw}
-            className="cursor-pointer hover:scale-105 transition-transform"
-          >
-            <img src={getCardBack()} className="w-35 h-50" />
-          </button>
-          <div ref={discardRef}>
-            <img
-              src={getCardImage(topCard.rank, topCard.suit)}
-              className="w-35 h-50"
-            />
-          </div>
+    <div className='grid h-screen w-screen grid-rows-[auto_1fr_auto] grid-cols-[auto_1fr_auto] bg-green-900 overflow-hidden'>
+      {/* Top Opponent */}
+      <section className='col-start-1 col-end-4 flex flex-col justify-center items-center pt-2'>
+        <p className="text-white font-bold mb-1">{gameState.playerNames[others[1]]}</p>
+        <div className="flex flex-row -space-x-16">
+          {gameState.hands[others[1]].map((_, i) => (
+            <img key={i} src={getCardBack()} className='w-24 h-36 rotate-180 shadow-lg' />
+          ))}
         </div>
-        {gameState.status === "FINISHED" && (
-          <button
-            onClick={handleNewGame}
-            className="mt-4 px-6 py-2 bg-white text-black rounded font-bold hover:bg-gray-200"
-          >
-            New Game
-          </button>
-        )}
       </section>
-
-      {/* right hand */}
-      <section
-        ref={opponent3Ref}
-        className="row-start-2 col-start-3 flex flex-col justify-center items-center pr-2 -space-y-60"
-      >
-        {opponent3Hand.map((_, i) => (
-          <img key={i} src={getCardBack()} className="w-35 h-50 -rotate-90" />
-        ))}
+      {/* Left Opponent */}
+      <section className='row-start-2 flex flex-col justify-center items-center pl-4'>
+        <p className="text-white font-bold mb-2 rotate-90">{gameState.playerNames[others[0]]}</p>
+        <div className="flex flex-col -space-y-24">
+          {gameState.hands[others[0]].map((_, i) => (
+            <img key={i} src={getCardBack()} className='w-24 h-36 rotate-90 shadow-lg' />
+          ))}
+        </div>
       </section>
-
-      {/* player hand */}
-      <section className="col-start-1 col-end-4 flex flex-row justify-center items-end pb-2 -space-x-16">
-        {userHand.map((card, i) => (
+      {/* Middle Board */}
+      <section className='row-start-2 col-start-2 flex flex-col justify-center items-center gap-6'>
+        <div className="text-center">
+          {message ? (
+            <p className='text-yellow-400 text-3xl font-black drop-shadow-md animate-bounce'>{message}</p>
+          ) : (
+            <p className='text-white text-xl font-bold bg-black/30 px-4 py-2 rounded-full'>
+              {gameState.currentPlayer === myIdx ? 'YOUR TURN' : `${gameState.playerNames[gameState.currentPlayer]}'s Turn`}
+            </p>
+          )}
+          <p className='text-white mt-2 font-medium'>Suit: {gameState.currentSuit}</p>
+        </div>
+        <div className='flex flex-row justify-center items-center gap-10'>
           <button
-            key={i}
-            ref={(el) => (cardRefs.current[i] = el)}
-            onClick={() => handleCardPlay(i)}
-            style={
-              playedCardIndex === i
-                ? {
-                    transform: `translate(${cardOffset.x}px, ${cardOffset.y}px)`,
-                    transition: "transform 0.4s ease-in-out",
-                    zIndex: 50,
-                    pointerEvents: "none",
-                  }
-                : {}
-            }
-            className="hover:-translate-y-4 focus:outline-none cursor-pointer"
+            onClick={handleDraw}
+            disabled={gameState.currentPlayer !== myIdx}
+            className='cursor-pointer hover:scale-105 transition-transform disabled:opacity-50'
           >
-            <img
-              src={getCardImage(card.rank, card.suit)}
-              className="w-35 h-50"
-            />
+            <img src={getCardBack()} className='w-32 h-48 shadow-2xl' />
+            <p className="text-white text-xs mt-2">{gameState.deck.length} cards left</p>
           </button>
-        ))}
+          <img src={getCardImage(topCard.rank, topCard.suit)} className='w-32 h-48 shadow-2xl' />
+        </div>
+      </section>
+      {/* Right Opponent */}
+      <section className='row-start-2 col-start-3 flex flex-col justify-center items-center pr-4'>
+        <p className="text-white font-bold mb-2 -rotate-90">{gameState.playerNames[others[2]]}</p>
+        <div className="flex flex-col -space-y-24">
+          {gameState.hands[others[2]].map((_, i) => (
+            <img key={i} src={getCardBack()} className='w-24 h-36 -rotate-90 shadow-lg' />
+          ))}
+        </div>
+      </section>
+      {/* Player Hand */}
+      <section className='col-start-1 col-end-4 flex flex-col justify-center items-center pb-4'>
+        <div className='flex flex-row justify-center items-end -space-x-12'>
+          {userHand.map((card, i) => (
+            <button
+              key={i}
+              disabled={gameState.currentPlayer !== myIdx || gameState.status === 'FINISHED'}
+              onClick={() => handleCardPlay(i)}
+              className='transition-all duration-150 hover:-translate-y-8 hover:z-10 focus:outline-none cursor-pointer disabled:cursor-not-allowed group'
+            >
+              <img src={getCardImage(card.rank, card.suit)} className='w-32 h-48 shadow-xl group-disabled:grayscale-[0.5]' />
+            </button>
+          ))}
+        </div>
+        <p className="text-white font-black mt-4 text-xl tracking-widest">{gameState.playerNames[myIdx]} (YOU)</p>
       </section>
     </div>
   );
