@@ -5,8 +5,8 @@ import { getCardImage, getCardBack } from '../utils/cardImages';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 
-const BACKEND_WS_URL = 'http://localhost:8080';
-const BACKEND_API_URL = 'http://localhost:8080/api';
+const BACKEND_WS_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
+const BACKEND_API_URL = `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'}/api`;
 
 export default function CrazyEights() {
   const location = useLocation();
