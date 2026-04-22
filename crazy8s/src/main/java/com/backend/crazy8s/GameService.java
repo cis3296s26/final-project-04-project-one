@@ -111,7 +111,7 @@ public class GameService {
         while (state.getStatus().equals("IN_PROGRESS") && isCpu(state, state.getCurrentPlayer())) {
             int current = state.getCurrentPlayer();
             List<Card> hand = state.getHands().get(current);
-            String name = PLAYER_NAMES[current];
+            String name = state.getPlayerNames().get(current);
 
             // Handle skip
             if (state.isSkipNext()) {
