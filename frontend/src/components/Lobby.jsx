@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { createRoom, joinRoom, startGame } from "../api/gameApi";
 import { Client } from "@stomp/stompjs";
+import { useLocation } from "react-router-dom";
 import SockJS from "sockjs-client";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
@@ -20,14 +21,20 @@ export default function Lobby({ onGameStart }) {
   const [displayName, setDisplayName] = useState(
     "Player " + Math.floor(Math.random() * 1000),
   );
-  const [roomCodeInput, setRoomCodeInput] = useState("");
+  const location = useLocation();
+  const [roomCodeInput, setRoomCodeInput] = useState(
+    location.state?.roomCode || "",
+  );
 
   const stompClient = useRef(null);
+  const handedOff = useRef(false);
 
   // Cleanup WebSocket on unmount
   useEffect(() => {
     return () => {
-      if (stompClient.current) stompClient.current.deactivate();
+      if (stompClient.current && !handedOff.current) {
+        stompClient.current.deactivate();
+      }
     };
   }, []);
 
@@ -40,11 +47,13 @@ export default function Lobby({ onGameStart }) {
         client.subscribe(`/topic/lobby/${roomCode}`, (msg) => {
           const data = JSON.parse(msg.body);
           if (data.gameId) {
-            // Server sent a gameId — subscribe to the game and wait for state
-            client.subscribe(`/topic/game/${data.gameId}`, (gameMsg) => {
-              const gameState = JSON.parse(gameMsg.body);
-              onGameStart(gameState, info, client);
-            });
+            // Fetch the game state via REST since the WS broadcast already happened
+            fetch(`${API_BASE}/api/game/${data.gameId}`)
+              .then((res) => res.json())
+              .then((gameState) => {
+                handedOff.current = true; // mark before handing off
+                onGameStart(gameState, info, client);
+              });
           } else {
             // Regular room update
             setRoom(data);

@@ -99,8 +99,15 @@ export default function CrazyEights({
 
   const handleCardPlay = async (cardIndex) => {
     if (isMultiplayer) {
+      console.log("isMultiplayer:", isMultiplayer);
+      console.log("stompClient:", stompClient);
+      console.log("stompClient.active:", stompClient?.active);
+      console.log("stompClient.connected:", stompClient?.connected);
+      console.log("gameState.currentPlayer:", gameState.currentPlayer);
+      console.log("myIdx:", myIdx);
+      console.log("isMyTurn:", gameState.currentPlayer === myIdx);
       // Multiplayer: send over WebSocket, state update comes back via subscription
-      if (stompClient && stompClient.connected) {
+      if (stompClient && stompClient.active) {
         stompClient.publish({
           destination: `/app/game/${gameState.gameId}/play`,
           body: JSON.stringify({
@@ -219,7 +226,7 @@ export default function CrazyEights({
 
   const handleDraw = async () => {
     if (isMultiplayer) {
-      if (stompClient && stompClient.connected) {
+      if (stompClient && stompClient.active) {
         stompClient.publish({
           destination: `/app/game/${gameState.gameId}/draw`,
           body: JSON.stringify({ playerIndex: myIdx }),
