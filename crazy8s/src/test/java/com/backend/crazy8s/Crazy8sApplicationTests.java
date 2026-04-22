@@ -15,9 +15,9 @@ class Crazy8sApplicationTests {
 
     @BeforeEach
     void setup() {
-        Ruleset ruleset = new Crazy8sRuleset();
-        gameService = new GameService(ruleset);
-        state = gameService.createGame();
+        gameService = new GameService();
+        Ruleset rules = new Crazy8sRuleset();
+        state = gameService.createGame(rules);
     }
 
     // ─── createGame ──────────────────────────────────────────────────────────────
@@ -85,12 +85,13 @@ class Crazy8sApplicationTests {
 
     @Test
     void gameStateShouldInitializeWithCorrectDefaults() {
-        GameState fresh = new GameState("test-id");
-        assertEquals("test-id", fresh.getGameId());
-        assertEquals(1, fresh.getDirection());
-        assertEquals(0, fresh.getCurrentPlayer());
-        assertFalse(fresh.isSkipNext());
-        assertEquals(0, fresh.getPenaltyDraw());
-        assertEquals("IN_PROGRESS", fresh.getStatus());
+        Ruleset freshRules = new Crazy8sRuleset();
+        GameState freshState = new GameState("test-id", freshRules);
+        assertEquals("test-id", freshState.getGameId());
+        assertEquals(1, freshState.getDirection());
+        assertEquals(0, freshState.getCurrentPlayer());
+        assertFalse(freshState.isSkipNext());
+        assertEquals(0, freshState.getPenaltyDraw());
+        assertEquals("IN_PROGRESS", freshState.getStatus());
     }
 }

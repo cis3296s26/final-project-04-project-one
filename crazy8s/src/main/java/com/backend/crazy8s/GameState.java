@@ -4,7 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class GameState {
-    private String gameId; 
+    private String gameId;
+    private Ruleset ruleset;
     private List<Card> deck;
     private List<List<Card>> hands;
     private List<Card> discardPile;
@@ -19,8 +20,9 @@ public class GameState {
 
     public GameState() {}
 
-    public GameState(String gameId) {
+    public GameState(String gameId, Ruleset ruleset) {
         this.gameId = gameId;
+        this.ruleset = ruleset;
         this.deck = new ArrayList<>();
         this.hands = new ArrayList<>();
         this.discardPile = new ArrayList<>();
@@ -34,6 +36,7 @@ public class GameState {
 
     // Getters
     public String getGameId() { return gameId; }
+    public Ruleset getRuleset() { return ruleset; }
     public List<Card> getDeck() { return deck; }
     public List<List<Card>> getHands() { return hands; }
     public List<Card> getDiscardPile() { return discardPile; }
@@ -48,6 +51,7 @@ public class GameState {
 
     // Setters
     public void setGameId(String gameId) { this.gameId = gameId; }
+    public void setRuleset(Ruleset ruleset) { this.ruleset = ruleset; }
     public void setDeck(List<Card> deck) { this.deck = deck; }
     public void setHands(List<List<Card>> hands) { this.hands = hands; }
     public void setDiscardPile(List<Card> discardPile) { this.discardPile = discardPile; }

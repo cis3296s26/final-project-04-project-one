@@ -3,6 +3,9 @@ package com.backend.crazy8s;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.springframework.stereotype.Component;
+
+@Component("unoRuleset")
 public class UnoRuleset implements Ruleset {
 
     @Override
@@ -43,6 +46,10 @@ public class UnoRuleset implements Ruleset {
             return false;
         }
 
+        if (topCard.getSuit().equals("wild") && discard.size() == 1) {
+            return true;
+        }
+        
         return card.getRank().equals("Wild")
             || card.getRank().equals("WildDraw4")
             || card.getRank().equals(topCard.getRank())

@@ -3,6 +3,9 @@ package com.backend.crazy8s;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.springframework.stereotype.Component;
+
+@Component("unoStacksRuleset")
 public class UnoStacksRuleset implements Ruleset {
 
     @Override
@@ -25,10 +28,10 @@ public class UnoStacksRuleset implements Ruleset {
 
         // 4 of each wild card (8)
         for (String wild : WILD) {
-            deck.add(new Card(wild, "none"));
-            deck.add(new Card(wild, "none"));
-            deck.add(new Card(wild, "none"));
-            deck.add(new Card(wild, "none"));
+            deck.add(new Card(wild, "wild"));
+            deck.add(new Card(wild, "wild"));
+            deck.add(new Card(wild, "wild"));
+            deck.add(new Card(wild, "wild"));
         }
         return deck;
     }
@@ -44,6 +47,11 @@ public class UnoStacksRuleset implements Ruleset {
             return card.getRank().equals(topCard.getRank());
         }
 
+        //Wild is first behavior
+        if (topCard.getSuit().equals("wild") && discard.size() == 1) {
+            return true;
+        }
+
         return card.getRank().equals("Wild")
             || card.getRank().equals("WildDraw4")
             || card.getRank().equals(topCard.getRank())
@@ -55,7 +63,7 @@ public class UnoStacksRuleset implements Ruleset {
         switch (card.getRank()) {
             case"WildDraw4" -> {
                 if (chosenSuit != null) state.setCurrentSuit(chosenSuit);
-                state.setPenaltyDraw(4);
+                state.setPenaltyDraw(state.getPenaltyDraw() + 4);
                 state.setSkipNext(true);
             }
             case "Wild" -> { 
@@ -64,7 +72,7 @@ public class UnoStacksRuleset implements Ruleset {
             case "Skip" -> state.setSkipNext(true);
             case "Reverse" -> state.setDirection(state.getDirection() * -1);
             case "Draw2" -> {
-                state.setPenaltyDraw(2);
+                state.setPenaltyDraw(state.getPenaltyDraw() + 2);
                 state.setSkipNext(true);
             }
         } 

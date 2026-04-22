@@ -3,6 +3,9 @@ package com.backend.crazy8s;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.springframework.stereotype.Component;
+
+@Component("crazy8sRuleset")
 public class Crazy8sRuleset implements Ruleset {
 
     @Override

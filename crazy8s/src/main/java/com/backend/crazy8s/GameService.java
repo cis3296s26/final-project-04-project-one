@@ -11,23 +11,16 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class GameService {
-
-    private final Ruleset ruleset;
-
-    public GameService(Ruleset ruleset) {
-        this.ruleset = ruleset;
-    }
-
     /* Change this once players are implemented */
     private static final String[] PLAYER_NAMES = {"User", "Player 2", "Player 3", "Player 4"};
 
     // Create Game
-    public GameState createGame() {
+    public GameState createGame(Ruleset ruleset) {
         String gameId = UUID.randomUUID().toString();
-        GameState state = new GameState(gameId);
+        GameState state = new GameState(gameId, ruleset);
 
         // Build and shuffle deck
-        List<Card> deck = createDeck();
+        List<Card> deck = createDeck(state);
         Collections.shuffle(deck);
         state.setDeck(deck);
 
@@ -61,6 +54,7 @@ public class GameService {
                 Card drawn = state.getDeck().remove(0);
                 state.getHands().get(0).add(drawn);
             }
+            state.setPenaltyDraw(0);
             advancePlayer(state);
         }
 
@@ -206,16 +200,17 @@ public class GameService {
 
     // Helpers
     private boolean isValidPlay(GameState state, Card card) {
-        return ruleset.handleValidPlay(state, card);
+        return state.getRuleset().handleValidPlay(state, card);
     }
 
     private void applyEffect(Card card, GameState state, String chosenSuit) {
-        ruleset.handleApplyEffect(state, card, chosenSuit);
+        state.getRuleset().handleApplyEffect(state, card, chosenSuit);
     }
 
-    private List<Card> createDeck() {
-        return ruleset.handleCreateDeck();
+    private List<Card> createDeck(GameState state) {
+        return state.getRuleset().handleCreateDeck();
     }
+
     private void advancePlayer(GameState state) {
         int next = (state.getCurrentPlayer() + state.getDirection() + 4) % 4;
         state.setCurrentPlayer(next);

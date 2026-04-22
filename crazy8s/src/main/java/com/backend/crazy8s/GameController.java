@@ -1,9 +1,16 @@
 package com.backend.crazy8s;
 
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
 import java.util.HashMap;
 import java.util.Map;
+
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/game")
@@ -11,15 +18,18 @@ import java.util.Map;
 public class GameController {
 
     private final GameService gameService;
+    private final RulesetFactory rulesetFactory;
     private final Map<String, GameState> games = new HashMap<>();
 
-    public GameController(GameService gameService) {
+    public GameController(GameService gameService, RulesetFactory rulesetFactory) {
         this.gameService = gameService;
+        this.rulesetFactory = rulesetFactory;
     }
 
     @PostMapping("/new")
     public GameState newGame() {
-        GameState state = gameService.createGame();
+        // default ruleset for testing
+        GameState state = gameService.createGame(rulesetFactory.get("crazy8sRuleset"));
         games.put(state.getGameId(), state);
         return state;
     }
