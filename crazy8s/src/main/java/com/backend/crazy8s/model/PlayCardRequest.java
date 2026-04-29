@@ -1,4 +1,4 @@
-package com.backend.crazy8s;
+package com.backend.crazy8s.model;
 
 public class PlayCardRequest {
     private int cardIndex;

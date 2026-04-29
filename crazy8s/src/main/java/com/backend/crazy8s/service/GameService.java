@@ -1,4 +1,4 @@
-package com.backend.crazy8s;
+package com.backend.crazy8s.service;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -8,6 +8,11 @@ import java.util.Map;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
+
+import com.backend.crazy8s.model.Card;
+import com.backend.crazy8s.model.GameState;
+import com.backend.crazy8s.model.TurnLogEntry;
+import com.backend.crazy8s.rules.Ruleset;
 
 @Service
 public class GameService {
@@ -48,25 +53,30 @@ public class GameService {
     public GameState drawCard(GameState state) {
         state.getTurnLog().clear();
 
+        List<Card> deck = state.getDeck();
+        List<Card> discard = state.getDiscardPile();
+        List<Card> hand = state.getHands().get(state.getCurrentPlayer());
+        int penalty = state.getPenaltyDraw();
+
         // draw card penalty
-        if (state.getPenaltyDraw() > 0) {
-            for (int i = 0; i < state.getPenaltyDraw(); i++) {
-                Card drawn = state.getDeck().remove(0);
-                state.getHands().get(0).add(drawn);
+        int i = 0;
+        do {
+            /* Could replace arraylist with deque/stack */
+            Card drawn = deck.remove(0);
+            hand.add(drawn);
+
+            if (deck.isEmpty()) {
+                deck.addAll(discard);
+                Collections.shuffle(deck);
+                discard.clear();
             }
-            state.setPenaltyDraw(0);
-            advancePlayer(state);
-        }
+            i++;
+        } while (i < penalty);
 
-        /* Add on empty behavior */
-        // voluntarily draw card
-        if (!state.getDeck().isEmpty()) {
-            Card drawn = state.getDeck().remove(0);
-            state.getHands().get(0).add(drawn);
-            advancePlayer(state);
-        }
+        if (penalty != 0) { state.setPenaltyDraw(0); }
+        /* Could add play after draw functionality */
 
-        /* Change when players are added */ 
+        advancePlayer(state);
         processCpuTurns(state);
         return state;
     }
@@ -74,28 +84,29 @@ public class GameService {
     // Play Card (User)
     public GameState playCard(GameState state, int cardIndex, String chosenSuit) {
         state.getTurnLog().clear();
-        List<Card> currentHand = state.getHands().get(state.getCurrentPlayer());
+        List<Card> hand = state.getHands().get(state.getCurrentPlayer());
+        List<Card> discard = state.getDiscardPile();
 
         // Validate selection
-        if (cardIndex < 0 || cardIndex >= currentHand.size())
+        if (cardIndex < 0 || cardIndex >= hand.size())
             throw new IllegalArgumentException("Invalid card index.");
 
-        Card card = currentHand.get(cardIndex);
+        Card card = hand.get(cardIndex);
 
         // Validate move
         if (!isValidPlay(state, card))
             throw new IllegalArgumentException("Invalid move.");
 
         // Play the card
-        currentHand.remove(cardIndex);
-        state.getDiscardPile().add(card);
+        hand.remove(cardIndex);
+        discard.add(card);
         state.setCurrentSuit(card.getSuit());
 
         // Handle special cards
         applyEffect(card, state, chosenSuit);
 
         // Check if player won
-        if (currentHand.isEmpty()) {
+        if (hand.isEmpty()) {
             state.setStatus("FINISHED");
             /* Change this once players are implemented */
             state.setWinner(PLAYER_NAMES[state.getCurrentPlayer()]);
@@ -111,6 +122,7 @@ public class GameService {
     // CPU Turns
     public void processCpuTurns(GameState state) {
         // Keep running CPU turns until it's the user's turn or game is over
+        /* Could update through using a player/bot class */
         while (state.getCurrentPlayer() != 0 && state.getStatus().equals("IN_PROGRESS")) {
             int current = state.getCurrentPlayer();
             List<Card> hand = state.getHands().get(current);
@@ -148,18 +160,18 @@ public class GameService {
                 }
             }
 
-            // Try an 8 if nothing else
+            // Try to play: any other card (wild)
             if (cardToPlay == null) {
                 for (Card c : hand) {
-                    if (c.getRank().equals("8")) {
+                    if (isValidPlay(state, c)) {
                         cardToPlay = c;
                         break;
                     }
                 }
             }
 
+            // Try to play card
             if (cardToPlay != null) {
-                // CPU picks most common suit
                 String chosenSuit = pickBestSuit(hand);
                 hand.remove(cardToPlay);
                 state.getDiscardPile().add(cardToPlay);
@@ -167,7 +179,9 @@ public class GameService {
                 
                 applyEffect(cardToPlay, state, chosenSuit);
                 state.getTurnLog().add(new TurnLogEntry(name + " played " + cardToPlay + ".", cardToPlay));
-            } else {
+            } 
+            // Draw card otherwise
+            else {
                 // Penalty draw
                 if (state.getPenaltyDraw() > 0) {
                     for (int i = 0; i < state.getPenaltyDraw(); i++) {
@@ -177,7 +191,6 @@ public class GameService {
                     advancePlayer(state);
                     continue;
                 }
-
                 // Draw card voluntarily
                 if (!state.getDeck().isEmpty()) {
                     hand.add(state.getDeck().remove(0));

@@ -1,14 +1,20 @@
-package com.backend.crazy8s;
+package com.backend.crazy8s.model;
 
 import java.util.ArrayList;
 import java.util.List;
 
+import com.backend.crazy8s.rules.Ruleset;
+
 public class GameState {
+    // Metadata
     private String gameId;
     private Ruleset ruleset;
+    private List<TurnLogEntry> turnLog;
+    // Items
     private List<Card> deck;
     private List<List<Card>> hands;
     private List<Card> discardPile;
+    // Data
     private String currentSuit;
     private int currentPlayer;
     private int direction;
@@ -16,13 +22,14 @@ public class GameState {
     private int penaltyDraw;
     private String status;
     private String winner;
-    private List<TurnLogEntry> turnLog;
+    
 
     public GameState() {}
 
     public GameState(String gameId, Ruleset ruleset) {
         this.gameId = gameId;
         this.ruleset = ruleset;
+        this.turnLog = new ArrayList<>();
         this.deck = new ArrayList<>();
         this.hands = new ArrayList<>();
         this.discardPile = new ArrayList<>();
@@ -31,12 +38,12 @@ public class GameState {
         this.skipNext = false;
         this.penaltyDraw = 0;
         this.status = "IN_PROGRESS";
-        this.turnLog = new ArrayList<>();
     }
 
     // Getters
     public String getGameId() { return gameId; }
     public Ruleset getRuleset() { return ruleset; }
+    public List<TurnLogEntry> getTurnLog() { return turnLog; }
     public List<Card> getDeck() { return deck; }
     public List<List<Card>> getHands() { return hands; }
     public List<Card> getDiscardPile() { return discardPile; }
@@ -47,11 +54,12 @@ public class GameState {
     public int getPenaltyDraw() { return penaltyDraw; }
     public String getStatus() { return status; }
     public String getWinner() { return winner; }
-    public List<TurnLogEntry> getTurnLog() { return turnLog; }
+    
 
     // Setters
     public void setGameId(String gameId) { this.gameId = gameId; }
     public void setRuleset(Ruleset ruleset) { this.ruleset = ruleset; }
+    public void setTurnLog(List<TurnLogEntry> turnLog) { this.turnLog = turnLog; }
     public void setDeck(List<Card> deck) { this.deck = deck; }
     public void setHands(List<List<Card>> hands) { this.hands = hands; }
     public void setDiscardPile(List<Card> discardPile) { this.discardPile = discardPile; }
@@ -62,5 +70,4 @@ public class GameState {
     public void setPenaltyDraw(int penaltyDraw) { this.penaltyDraw = penaltyDraw; }
     public void setStatus(String status) { this.status = status; }
     public void setWinner(String winner) { this.winner = winner; }
-    public void setTurnLog(List<TurnLogEntry> turnLog) { this.turnLog = turnLog; }
 }

@@ -1,9 +1,9 @@
 // TurnLogEntry.java
-package com.backend.crazy8s;
+package com.backend.crazy8s.model;
 
 public class TurnLogEntry {
-    private String message;
-    private Card cardPlayed; // null if drew a card
+    private final String message;
+    private final Card cardPlayed; // null if drew a card
 
     public TurnLogEntry(String message, Card cardPlayed) {
         this.message = message;

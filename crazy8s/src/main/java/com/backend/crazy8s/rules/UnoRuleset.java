@@ -1,9 +1,12 @@
-package com.backend.crazy8s;
+package com.backend.crazy8s.rules;
 
 import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.stereotype.Component;
+
+import com.backend.crazy8s.model.Card;
+import com.backend.crazy8s.model.GameState;
 
 @Component("unoRuleset")
 public class UnoRuleset implements Ruleset {
@@ -16,22 +19,22 @@ public class UnoRuleset implements Ruleset {
         List<Card> deck = new ArrayList<>();
 
         // 1 zero card per color (4)
-        for (String suit : SUITS) { deck.add(new Card("0", suit)); }
+        for (String s : SUITS) { deck.add(new Card("0", s)); }
 
         // 2 number and action cards per color (96)
-        for (String suit : SUITS) {
-            for (String rank : RANKS) {
-                deck.add(new Card(rank, suit));
-                deck.add(new Card(rank, suit));
+        for (String s : SUITS) {
+            for (String r : RANKS) {
+                deck.add(new Card(r, s));
+                deck.add(new Card(r, s));
             }
         }
 
         // 4 of each wild card (8)
-        for (String wild : WILD) {
-            deck.add(new Card(wild, "none"));
-            deck.add(new Card(wild, "none"));
-            deck.add(new Card(wild, "none"));
-            deck.add(new Card(wild, "none"));
+        for (String w : WILD) {
+            deck.add(new Card(w, "wild"));
+            deck.add(new Card(w, "wild"));
+            deck.add(new Card(w, "wild"));
+            deck.add(new Card(w, "wild"));
         }
         return deck;
     }
@@ -46,12 +49,12 @@ public class UnoRuleset implements Ruleset {
             return false;
         }
 
+        // Wild card start behavior
         if (topCard.getSuit().equals("wild") && discard.size() == 1) {
             return true;
         }
         
-        return card.getRank().equals("Wild")
-            || card.getRank().equals("WildDraw4")
+        return card.getSuit().equals("Wild")
             || card.getRank().equals(topCard.getRank())
             || card.getSuit().equals(state.getCurrentSuit());
     }
@@ -59,7 +62,7 @@ public class UnoRuleset implements Ruleset {
     @Override
     public void handleApplyEffect(GameState state, Card card, String chosenSuit) {
         switch (card.getRank()) {
-            case"WildDraw4" -> {
+            case "WildDraw4" -> {
                 if (chosenSuit != null) state.setCurrentSuit(chosenSuit);
                 state.setPenaltyDraw(4);
                 state.setSkipNext(true);

@@ -1,6 +1,9 @@
-package com.backend.crazy8s;
+package com.backend.crazy8s.rules;
 
 import java.util.List;
+
+import com.backend.crazy8s.model.Card;
+import com.backend.crazy8s.model.GameState;
 
 public interface Ruleset {
 

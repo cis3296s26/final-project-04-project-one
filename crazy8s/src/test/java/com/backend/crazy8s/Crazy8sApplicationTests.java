@@ -8,6 +8,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import com.backend.crazy8s.model.Card;
+import com.backend.crazy8s.model.GameState;
+import com.backend.crazy8s.rules.Crazy8sRuleset;
+import com.backend.crazy8s.rules.Ruleset;
+import com.backend.crazy8s.service.GameService;
+
 class Crazy8sApplicationTests {
 
     private GameService gameService;

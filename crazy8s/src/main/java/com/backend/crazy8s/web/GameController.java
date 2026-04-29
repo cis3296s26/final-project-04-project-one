@@ -1,4 +1,4 @@
-package com.backend.crazy8s;
+package com.backend.crazy8s.web;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -11,6 +11,11 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import com.backend.crazy8s.model.GameState;
+import com.backend.crazy8s.model.PlayCardRequest;
+import com.backend.crazy8s.rules.RulesetFactory;
+import com.backend.crazy8s.service.GameService;
 
 @RestController
 @RequestMapping("/api/game")

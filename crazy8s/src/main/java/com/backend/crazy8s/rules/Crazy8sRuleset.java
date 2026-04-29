@@ -1,9 +1,12 @@
-package com.backend.crazy8s;
+package com.backend.crazy8s.rules;
 
 import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.stereotype.Component;
+
+import com.backend.crazy8s.model.Card;
+import com.backend.crazy8s.model.GameState;
 
 @Component("crazy8sRuleset")
 public class Crazy8sRuleset implements Ruleset {
@@ -16,7 +19,7 @@ public class Crazy8sRuleset implements Ruleset {
 
         for (String suit : SUITS) {
             for (String rank : RANKS) {
-                deck.add(new Card(suit, rank));
+                deck.add(new Card(rank, suit));
             }
         }
         return deck;
