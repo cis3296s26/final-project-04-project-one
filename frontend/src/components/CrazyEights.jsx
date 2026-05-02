@@ -15,11 +15,20 @@ export default function CrazyEights() {
   const [room, setRoom] = useState(null);
   const [playerInfo, setPlayerInfo] = useState(null);
   const [actionPending, setActionPending] = useState(false);
+  const [playingCardIndex, setPlayingCardIndex] = useState(null);
+  const [animatedPlayer, setAnimatedPlayer] = useState(null);
   const [message, setMessage] = useState('');
   const [displayName, setDisplayName] = useState('Player ' + Math.floor(Math.random() * 1000));
   const [roomCodeInput, setRoomCodeInput] = useState('');
 
   const stompClient = useRef(null);
+  const previousGameState = useRef(null);
+  const playerInfoRef = useRef(null);
+  const pendingTimeoutRef = useRef(null);
+
+  useEffect(() => {
+    playerInfoRef.current = playerInfo;
+  }, [playerInfo]);
 
   useEffect(() => {
     const state = location.state;
@@ -31,16 +40,68 @@ export default function CrazyEights() {
         roomCode: state.roomCode || ''
       };
 
+      playerInfoRef.current = info;
       setPlayerInfo(info);
       connectToGameDirect(state.gameId);
     }
 
     return () => {
+      if (pendingTimeoutRef.current) {
+        clearTimeout(pendingTimeoutRef.current);
+      }
+
       if (stompClient.current) {
         stompClient.current.deactivate();
       }
     };
   }, []);
+
+  const clearPendingAction = () => {
+    if (pendingTimeoutRef.current) {
+      clearTimeout(pendingTimeoutRef.current);
+      pendingTimeoutRef.current = null;
+    }
+
+    setActionPending(false);
+    setPlayingCardIndex(null);
+  };
+
+  const startPendingFallback = () => {
+    if (pendingTimeoutRef.current) {
+      clearTimeout(pendingTimeoutRef.current);
+    }
+
+    pendingTimeoutRef.current = setTimeout(() => {
+      setActionPending(false);
+      setPlayingCardIndex(null);
+    }, 1500);
+  };
+
+  const updateGameStateWithAnimation = (newState) => {
+    const oldState = previousGameState.current;
+    const currentPlayerInfo = playerInfoRef.current;
+
+    if (oldState && oldState.hands && newState.hands && currentPlayerInfo) {
+      for (let i = 0; i < newState.hands.length; i++) {
+        const oldHandSize = oldState.hands[i]?.length ?? 0;
+        const newHandSize = newState.hands[i]?.length ?? 0;
+
+        if (newHandSize < oldHandSize && i !== currentPlayerInfo.playerIndex) {
+          setAnimatedPlayer(i);
+
+          setTimeout(() => {
+            setAnimatedPlayer(null);
+          }, 350);
+
+          break;
+        }
+      }
+    }
+
+    previousGameState.current = newState;
+    setGameState(newState);
+    clearPendingAction();
+  };
 
   const connectToGameDirect = (gameId) => {
     const client = new Client({
@@ -51,8 +112,7 @@ export default function CrazyEights() {
         client.subscribe(`/topic/game/${gameId}`, (msg) => {
           const newState = JSON.parse(msg.body);
 
-          setGameState(newState);
-          setActionPending(false);
+          updateGameStateWithAnimation(newState);
 
           if (newState.status === 'FINISHED') {
             setMessage(`${newState.winner} wins!`);
@@ -64,8 +124,7 @@ export default function CrazyEights() {
         fetch(`${BACKEND_API_URL}/game/${gameId}`)
           .then(res => res.json())
           .then(state => {
-            setGameState(state);
-            setActionPending(false);
+            updateGameStateWithAnimation(state);
 
             if (state.status === 'FINISHED') {
               setMessage(`${state.winner} wins!`);
@@ -74,17 +133,17 @@ export default function CrazyEights() {
           .catch(err => {
             console.error('Failed to fetch initial game state:', err);
             setMessage('Failed to load game state.');
-            setActionPending(false);
+            clearPendingAction();
           });
       },
 
       onStompError: () => {
         setMessage('Connection issue. Try refreshing or restarting the game.');
-        setActionPending(false);
+        clearPendingAction();
       },
 
       onWebSocketClose: () => {
-        setActionPending(false);
+        clearPendingAction();
       }
     });
 
@@ -111,11 +170,11 @@ export default function CrazyEights() {
 
       onStompError: () => {
         setMessage('Connection issue. Try refreshing or restarting the game.');
-        setActionPending(false);
+        clearPendingAction();
       },
 
       onWebSocketClose: () => {
-        setActionPending(false);
+        clearPendingAction();
       }
     });
 
@@ -134,8 +193,7 @@ export default function CrazyEights() {
     c.subscribe(`/topic/game/${gameId}`, (msg) => {
       const newState = JSON.parse(msg.body);
 
-      setGameState(newState);
-      setActionPending(false);
+      updateGameStateWithAnimation(newState);
 
       if (newState.status === 'FINISHED') {
         setMessage(`${newState.winner} wins!`);
@@ -147,8 +205,7 @@ export default function CrazyEights() {
     fetch(`${BACKEND_API_URL}/game/${gameId}`)
       .then(res => res.json())
       .then(state => {
-        setGameState(state);
-        setActionPending(false);
+        updateGameStateWithAnimation(state);
 
         if (state.status === 'FINISHED') {
           setMessage(`${state.winner} wins!`);
@@ -157,7 +214,7 @@ export default function CrazyEights() {
       .catch(err => {
         console.error('Failed to fetch initial game state:', err);
         setMessage('Failed to load game state.');
-        setActionPending(false);
+        clearPendingAction();
       });
   };
 
@@ -167,6 +224,7 @@ export default function CrazyEights() {
 
       const data = await createRoom(displayName);
 
+      playerInfoRef.current = data;
       setPlayerInfo(data);
       connectToLobby(data.roomCode);
     } catch (e) {
@@ -180,6 +238,7 @@ export default function CrazyEights() {
 
       const data = await joinRoom(roomCodeInput, displayName);
 
+      playerInfoRef.current = data;
       setPlayerInfo(data);
       connectToLobby(data.roomCode);
     } catch (e) {
@@ -218,17 +277,27 @@ export default function CrazyEights() {
       return;
     }
 
+    setPlayingCardIndex(cardIndex);
     setActionPending(true);
     setMessage('');
+    startPendingFallback();
 
-    stompClient.current.publish({
-      destination: `/app/game/${gameState.gameId}/play`,
-      body: JSON.stringify({
-        playerIndex: playerInfo.playerIndex,
-        cardIndex,
-        chosenSuit: null
-      })
-    });
+    setTimeout(() => {
+      if (!stompClient.current || !stompClient.current.connected) {
+        setMessage('Connection issue. Try refreshing or restarting the game.');
+        clearPendingAction();
+        return;
+      }
+
+      stompClient.current.publish({
+        destination: `/app/game/${gameState.gameId}/play`,
+        body: JSON.stringify({
+          playerIndex: playerInfo.playerIndex,
+          cardIndex,
+          chosenSuit: null
+        })
+      });
+    }, 250);
   };
 
   const handleDraw = () => {
@@ -255,6 +324,7 @@ export default function CrazyEights() {
 
     setActionPending(true);
     setMessage('');
+    startPendingFallback();
 
     stompClient.current.publish({
       destination: `/app/game/${gameState.gameId}/draw`,
@@ -356,7 +426,11 @@ export default function CrazyEights() {
           {gameState.playerNames[others[1]]}
         </p>
 
-        <div className="flex flex-row -space-x-16">
+        <div
+          className={`flex flex-row -space-x-16 transition-all duration-300 ${
+            animatedPlayer === others[1] ? 'translate-y-10 scale-105 opacity-70' : ''
+          }`}
+        >
           {gameState.hands[others[1]].map((_, i) => (
             <img
               key={i}
@@ -372,7 +446,11 @@ export default function CrazyEights() {
           {gameState.playerNames[others[0]]}
         </p>
 
-        <div className="flex flex-col -space-y-24">
+        <div
+          className={`flex flex-col -space-y-24 transition-all duration-300 ${
+            animatedPlayer === others[0] ? 'translate-x-10 scale-105 opacity-70' : ''
+          }`}
+        >
           {gameState.hands[others[0]].map((_, i) => (
             <img
               key={i}
@@ -428,7 +506,11 @@ export default function CrazyEights() {
           {gameState.playerNames[others[2]]}
         </p>
 
-        <div className="flex flex-col -space-y-24">
+        <div
+          className={`flex flex-col -space-y-24 transition-all duration-300 ${
+            animatedPlayer === others[2] ? '-translate-x-10 scale-105 opacity-70' : ''
+          }`}
+        >
           {gameState.hands[others[2]].map((_, i) => (
             <img
               key={i}
@@ -446,7 +528,9 @@ export default function CrazyEights() {
               key={i}
               disabled={controlsDisabled}
               onClick={() => handleCardPlay(i)}
-              className="transition-all duration-150 hover:-translate-y-8 hover:z-10 focus:outline-none cursor-pointer disabled:cursor-not-allowed group"
+              className={`transition-all duration-300 hover:-translate-y-8 hover:z-10 focus:outline-none cursor-pointer disabled:cursor-not-allowed group ${
+                playingCardIndex === i ? '-translate-y-40 scale-110 opacity-0' : ''
+              }`}
             >
               <img
                 src={getCardImage(card.rank, card.suit)}
