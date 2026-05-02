@@ -17,19 +17,29 @@ public class GameSocketController {
     }
 
     @MessageMapping("/game/{gameId}/play")
-    public void playCard(@DestinationVariable String gameId, PlayCardRequest request) {
+public void playCard(@DestinationVariable String gameId, PlayCardRequest request) {
+    try {
         GameState updatedState = gameService.playCard(
-            gameId, 
-            request.getPlayerIndex(), 
-            request.getCardIndex(), 
+            gameId,
+            request.getPlayerIndex(),
+            request.getCardIndex(),
             request.getChosenSuit()
         );
         messagingTemplate.convertAndSend("/topic/game/" + gameId, updatedState);
+    } catch (Exception e) {
+        GameState currentState = gameService.getGame(gameId);
+        messagingTemplate.convertAndSend("/topic/game/" + gameId, currentState);
     }
+}
 
     @MessageMapping("/game/{gameId}/draw")
-    public void drawCard(@DestinationVariable String gameId, DrawCardRequest request) {
+public void drawCard(@DestinationVariable String gameId, DrawCardRequest request) {
+    try {
         GameState updatedState = gameService.drawCard(gameId, request.getPlayerIndex());
         messagingTemplate.convertAndSend("/topic/game/" + gameId, updatedState);
+    } catch (Exception e) {
+        GameState currentState = gameService.getGame(gameId);
+        messagingTemplate.convertAndSend("/topic/game/" + gameId, currentState);
     }
+}
 }

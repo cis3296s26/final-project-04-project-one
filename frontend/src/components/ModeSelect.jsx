@@ -27,7 +27,28 @@ export default function ModeSelect() {
   const stompRef = useRef(null);
 
   const goToHome = () => navigate('/');
-  const goToCrazyEights = () => navigate('/crazy-eights');
+  const goToCrazyEights = async () => {
+  setLoading(true);
+  setError('');
+
+  try {
+    const room = await createRoom('Player');
+    const game = await startGame(room.roomCode);
+
+    navigate('/crazy-eights', {
+      state: {
+        gameId: game.gameId,
+        playerId: room.playerId,
+        playerIndex: room.playerIndex,
+        multiplayer: true
+      }
+    });
+  } catch (err) {
+    setError('Failed to start bot game.');
+  } finally {
+    setLoading(false);
+  }
+};
 
   // Connect WebSocket and subscribe to lobby topic
   function connectLobby(code, pid, pIndex) {
