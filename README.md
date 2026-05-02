@@ -12,6 +12,10 @@ The project aims to provide a lightweight, accessible, and customizable card gam
 
 # Getting Started
 
+### Deployment Link
+
+Access the web application here: https://final-project-04-project-one.onrender.com/
+
 ### Prerequisites
 
 - [Node.js](https://nodejs.org/en/)
