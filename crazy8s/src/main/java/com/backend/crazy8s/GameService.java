@@ -58,6 +58,25 @@ public class GameService {
     public GameState drawCard(String gameId, int playerIndex) {
         GameState state = getGame(gameId);
         if (state == null || state.getCurrentPlayer() != playerIndex) return state;
+        if (state.isSkipNext()) {
+            state.setSkipNext(false);
+            advancePlayer(state);
+            processCpuTurns(state);
+            return state;
+        }
+        if (state.getPenaltyDraw() > 0) {
+            List<Card> hand = state.getHands().get(playerIndex);
+            int amount = state.getPenaltyDraw();
+            for (int i = 0; i < amount; i++) {
+                if (!state.getDeck().isEmpty()) {
+            hand.add(state.getDeck().remove(0));
+        }
+    }
+    state.setPenaltyDraw(0);
+    advancePlayer(state);
+    processCpuTurns(state);
+    return state;
+}
 
         if (!state.getDeck().isEmpty()) {
             Card drawn = state.getDeck().remove(0);
@@ -73,6 +92,25 @@ public class GameService {
     public GameState playCard(String gameId, int playerIndex, int cardIndex, String chosenSuit) {
         GameState state = getGame(gameId);
         if (state == null || state.getCurrentPlayer() != playerIndex) return state;
+         if (state.isSkipNext()) {
+            state.setSkipNext(false);
+            advancePlayer(state);
+            processCpuTurns(state);
+            return state;
+        }
+        if (state.getPenaltyDraw() > 0) {
+            List<Card> hand = state.getHands().get(playerIndex);
+            int amount = state.getPenaltyDraw();
+            for (int i = 0; i < amount; i++) {
+                if (!state.getDeck().isEmpty()) {
+            hand.add(state.getDeck().remove(0));
+        }
+    }
+    state.setPenaltyDraw(0);
+    advancePlayer(state);
+    processCpuTurns(state);
+    return state;
+}
 
         List<Card> hand = state.getHands().get(playerIndex);
         Card topCard = getTopCard(state);
